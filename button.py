@@ -1,7 +1,7 @@
 from game import *
 
 class Button:
-    def __init__(self, text, x_pos, y_pos, height, font = SMALL_FONT, colour_one = BLUE, colour_two = ORANGE, width = 0):
+    def __init__(self, text, x_pos, y_pos, height, font = SMALL_FONT, colour_one = BACKGROUND, colour_two = ORANGE, width = 0):
         self.text = text
         self.xPos = x_pos
         self.yPos = y_pos

@@ -1,12 +1,16 @@
 import socket
 from _thread import *
 import pickle
+from player import Player
 
 port = 5555
 
 class Server:
     sock = None
+    added_players = 0
+    player_count = 0
     client_addresses = []
+    players = []
 
 
 def threaded_client(conn, ip):
@@ -17,6 +21,16 @@ def threaded_client(conn, ip):
                 print(ip[0] + " Disconnected")
                 break
             else:
+                if data == "?":
+                    if Server.added_players == Server.player_count:
+                        data = (Server.players, 1)
+                    else:
+                        data = False
+                elif data[0] == "Name":
+                    print("From " + str(ip[0]) + ", Received Player Name: " + str(data[1]))
+                    Server.players.append(Player(Server.added_players, data[1]))
+                    data = (Server.added_players, Server.player_count)
+                    Server.added_players += 1
                 if data:
                     print("Sending " + str(data) + " to " + ip[0])
                 conn.sendall(pickle.dumps(data))
