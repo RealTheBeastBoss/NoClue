@@ -92,6 +92,17 @@ def draw_window():  # Game Logic and Display
             pygame.quit()
 
 
+def check_click_location(location):
+    if Game.LEFT_MOUSE_RELEASED:
+        count = 0
+        xp, yp = pygame.mouse.get_pos()
+        for edge in location.edges:
+            if (yp < edge[1]) != (yp < edge[3]) and xp < edge[0] + ((yp - edge[1]) / (edge[3] - edge[1])) * (edge[2] - edge[0]):
+                count += 1
+        return count % 2 == 1
+    return False
+
+
 def draw_text(text, font, colour, location, center = True):  # Draws text centered on a location
     text_surface = font.render(text, True, colour)
     text_width = text_surface.get_width()
