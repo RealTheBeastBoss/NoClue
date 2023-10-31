@@ -10,6 +10,7 @@ BUTTON_COOLDOWN_EVENT = pygame.USEREVENT + 1
 # Game Fonts:
 SMALL_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 30)
 MEDIUM_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 60)
+BIG_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 90)
 
 # Game Colours:
 ORANGE = (255, 102, 0)

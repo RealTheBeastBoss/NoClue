@@ -10,6 +10,7 @@ pygame.display.set_caption("No Clue")
 def draw_window():  # Game Logic and Display
     if Game.SCREEN_STATE == ScreenState.START:
         WINDOW.fill(BACKGROUND)
+        draw_text("No Clue", BIG_FONT, ORANGE, (960, 200))
         quit_button = Button("Quit", 960, 590, 60)
         play_button = Button("Play", 960, 490, 60)
         if quit_button.check_click():
@@ -27,8 +28,9 @@ def draw_window():  # Game Logic and Display
         create_button = Button("Create Game", 960, 540, 60)
         if back_button.check_click():
             Game.SCREEN_STATE = ScreenState.START
+            if Game.HAS_SERVER:
+                close_server()
             Game.HAS_SERVER = False
-            close_server()
         elif create_button.check_click():
             if Game.USER_TEXT != "" and check_server(Game.USER_TEXT):
                 Game.SCREEN_STATE = ScreenState.CREATE_SERVER
