@@ -57,23 +57,23 @@ def draw_window():  # Game Logic and Display
         if back_button.check_click():
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif two_button.check_click():
-            start_new_thread(start_server, (2, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
+            start_new_thread(start_server, (2, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE, GAME_CARDS))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif three_button.check_click():
-            start_new_thread(start_server, (3, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
+            start_new_thread(start_server, (3, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE, GAME_CARDS))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif four_button.check_click():
-            start_new_thread(start_server, (4, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
+            start_new_thread(start_server, (4, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE, GAME_CARDS))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif five_button.check_click():
-            start_new_thread(start_server, (5, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
+            start_new_thread(start_server, (5, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE, GAME_CARDS))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif six_button.check_click():
-            start_new_thread(start_server, (6, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
+            start_new_thread(start_server, (6, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE, GAME_CARDS))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
     elif Game.SCREEN_STATE == ScreenState.NAME_PLAYER:
@@ -90,6 +90,7 @@ def draw_window():  # Game Logic and Display
             orchid_button = Button("Dr Orchid", 960, 755, 60)
             if scarlett_button.check_click():
                 data = ("Player", 0)
+                Game.CLIENT_NUMBER = 0
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
@@ -97,6 +98,7 @@ def draw_window():  # Game Logic and Display
                     Game.FAILED_SELECTION = True
             elif mustard_button.check_click():
                 data = ("Player", 1)
+                Game.CLIENT_NUMBER = 1
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
@@ -104,6 +106,7 @@ def draw_window():  # Game Logic and Display
                     Game.FAILED_SELECTION = True
             elif orchid_button.check_click():
                 data = ("Player", 2)
+                Game.CLIENT_NUMBER = 2
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
@@ -111,6 +114,7 @@ def draw_window():  # Game Logic and Display
                     Game.FAILED_SELECTION = True
             elif green_button.check_click():
                 data = ("Player", 3)
+                Game.CLIENT_NUMBER = 3
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
@@ -118,6 +122,7 @@ def draw_window():  # Game Logic and Display
                     Game.FAILED_SELECTION = True
             elif peacock_button.check_click():
                 data = ("Player", 4)
+                Game.CLIENT_NUMBER = 4
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
@@ -125,6 +130,7 @@ def draw_window():  # Game Logic and Display
                     Game.FAILED_SELECTION = True
             elif plum_button.check_click():
                 data = ("Player", 5)
+                Game.CLIENT_NUMBER = 5
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
@@ -137,6 +143,10 @@ def draw_window():  # Game Logic and Display
                 Game.PLAYERS = response[0]
                 Game.CLUE_CARD_DECK = response[1]
                 Game.CLUE_CARDS_ACTIVE = response[2]
+                for x in range(len(Game.PLAYERS)):
+                    if Game.PLAYERS[x].playerNumber == Game.CLIENT_NUMBER:
+                        Game.CLIENT_NUMBER = x
+                        break
                 Game.SCREEN_STATE = ScreenState.PLAYING_GAME
                 Game.CLUE_SHEET = ClueSheet()
         temp_button = Button("Quit", 960, 900, 60)
@@ -145,6 +155,8 @@ def draw_window():  # Game Logic and Display
     elif Game.SCREEN_STATE == ScreenState.PLAYING_GAME:
         WINDOW.fill(BACKGROUND)
         draw_game_board()
+        for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER])):
+            draw_text(Game.PLAYERS[Game.CLIENT_NUMBER].cards[x].displayName, SMALL_FONT, WHITE, (1700, 55 + (x * 30)))
         temp_button = Button("Quit", 1300, 540, 60)
         if temp_button.check_click():
             pygame.quit()
@@ -163,9 +175,11 @@ def draw_game_board():
             player_location = (50, 50)
         pygame.draw.circle(WINDOW, player.playerColour, player_location, 18)
     if Game.CLUE_CARDS_ACTIVE:
-        clue_rect = pygame.Rect((542, 513), (100, 140))
-        pygame.draw.rect(WINDOW, WHITE, clue_rect, 0, 10)
-        pygame.draw.rect(WINDOW, BLACK, clue_rect, 5, 10)
+        clue_rect = pygame.Rect((515, 463), (154, 240))
+        pygame.draw.rect(WINDOW, BLACK, clue_rect, 0, 10)
+        pygame.draw.rect(WINDOW, WHITE, clue_rect, 5, 10)
+        draw_text("Clue", SMALL_FONT, WHITE, (592, 553))
+        draw_text("Card", SMALL_FONT, WHITE, (592, 613))
 
 
 def check_click_location(location):

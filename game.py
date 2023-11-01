@@ -2,6 +2,7 @@ from card import *
 from location import *
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
+import os
 
 pygame.font.init()
 FPS = 60
@@ -65,7 +66,29 @@ class ScreenState(Enum):
 
 # region
 # Game Cards:
-PROF_PLUM = GameCard(CardType.SUSPECT, "Professor Plum", "prof_plum.png")
+MISS_SCARLETT = GameCard(CardType.SUSPECT, "Miss Scarlett")
+COL_MUSTARD = GameCard(CardType.SUSPECT, "Col. Mustard")
+DR_ORCHID = GameCard(CardType.SUSPECT, "Dr Orchid")
+REV_GREEN = GameCard(CardType.SUSPECT, "Rev. Green")
+MRS_PEACOCK = GameCard(CardType.SUSPECT, "Mrs Peacock")
+PROF_PLUM = GameCard(CardType.SUSPECT, "Professor Plum")
+CANDLESTICK = GameCard(CardType.WEAPON, "Candlestick")
+DAGGER = GameCard(CardType.WEAPON, "Dagger")
+LEAD_PIPE = GameCard(CardType.WEAPON, "Lead Pipe")
+REVOLVER = GameCard(CardType.WEAPON, "Revolver")
+ROPE = GameCard(CardType.WEAPON, "Rope")
+WRENCH = GameCard(CardType.WEAPON, "Wrench")
+BALLROOM_CARD = GameCard(CardType.LOCATION, "Ballroom")
+BILLIARD_ROOM_CARD = GameCard(CardType.LOCATION, "Billiard Room")
+CONSERVATORY_CARD = GameCard(CardType.LOCATION, "Conservatory")
+DINING_ROOM_CARD = GameCard(CardType.LOCATION, "Dining Room")
+HALL_CARD = GameCard(CardType.LOCATION, "Hall")
+KITCHEN_CARD = GameCard(CardType.LOCATION, "Kitchen")
+LIBRARY_CARD = GameCard(CardType.LOCATION, "Library")
+LOUNGE_CARD = GameCard(CardType.LOCATION, "Lounge")
+STUDY_CARD = GameCard(CardType.LOCATION, "Study")
+GAME_CARDS = [MISS_SCARLETT, COL_MUSTARD, DR_ORCHID, REV_GREEN, MRS_PEACOCK, PROF_PLUM, CANDLESTICK, DAGGER, LEAD_PIPE, REVOLVER, ROPE, WRENCH, BALLROOM_CARD, BILLIARD_ROOM_CARD, CONSERVATORY_CARD, DINING_ROOM_CARD,
+              HALL_CARD, KITCHEN_CARD, LIBRARY_CARD, LOUNGE_CARD, STUDY_CARD]
 
 # Clue Cards:
 SHOW_DINING = ClueCard("Where?", "Anyone holding the Dining Room card must reveal it!", "Dinner is served.")

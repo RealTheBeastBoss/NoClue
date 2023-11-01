@@ -1,5 +1,4 @@
 from enum import Enum
-import os
 
 class CardType(Enum):
     SUSPECT = 1
@@ -7,10 +6,9 @@ class CardType(Enum):
     LOCATION = 3
 
 class GameCard:
-    def __init__(self, card_type, name, image_ref):
+    def __init__(self, card_type, name):
         self.displayName = name
         self.cardType = card_type
-        self.image_path = os.path.join("Assets", "Cards", image_ref)
 
 class ClueCard:
     def __init__(self, title, action, subtitle = None):

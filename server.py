@@ -3,6 +3,7 @@ from _thread import *
 import pickle
 from player import Player
 import random
+from card import CardType
 
 port = 5555
 
@@ -14,6 +15,8 @@ class Server:
     players = []
     clue_cards = []
     clue_cards_active = False
+    game_cards = None
+    final_cards = None
 
 
 def threaded_client(conn, ip):
@@ -40,9 +43,33 @@ def threaded_client(conn, ip):
                         data = Server.player_count
                         Server.added_players += 1
                         if Server.added_players == Server.player_count:
+                            suspect_cards = []
+                            weapon_cards = []
+                            location_cards = []
+                            for card in Server.game_cards:
+                                if card.cardType == CardType.SUSPECT:
+                                    suspect_cards.append(card)
+                                elif card.cardType == CardType.WEAPON:
+                                    weapon_cards.append(card)
+                                else:
+                                    location_cards.append(card)
+                            random.shuffle(suspect_cards)
+                            random.shuffle(weapon_cards)
+                            random.shuffle(location_cards)
+                            Server.final_cards = (suspect_cards.pop(), weapon_cards.pop(), location_cards.pop())
+                            cards = suspect_cards + weapon_cards + location_cards
+                            random.shuffle(cards)
+                            selected_player = 0
+                            while len(cards) > 0:
+                                Server.players[selected_player].cards.append(cards.pop())
+                                if selected_player == Server.player_count - 1:
+                                    selected_player = 0
+                                else:
+                                    selected_player += 1
                             random.shuffle(Server.clue_cards)
                             players = Server.players.copy()
                             Server.players.clear()
+                            Server.game_cards.clear()
                             players.sort(key=sort_by_number)
                             for x in range(len(players)):
                                 players[x].playerIndex = x
@@ -69,10 +96,11 @@ def check_server(server):
         return False
 
 
-def start_server(count, server, clue_cards, clue_active):
+def start_server(count, server, clue_cards, clue_active, game_cards):
     Server.player_count = count
     Server.clue_cards = clue_cards
     Server.clue_cards_active = clue_active
+    Server.game_cards = game_cards
     Server.sock.listen(Server.player_count)
     print("Waiting for Connection, Server Started at " + server)
     while True:
