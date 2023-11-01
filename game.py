@@ -48,6 +48,11 @@ BIG_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 90)
 ORANGE = (255, 102, 0)
 PINK = (230, 73, 198)
 WHITE = (255, 255, 255)
+RED = (200, 0, 0)
+MUSTARD = (255, 252, 71)
+GREEN = (0, 169, 0)
+LIGHT_BLUE = (0, 185, 227)
+PURPLE = (179, 0, 255)
 BACKGROUND = (26, 15, 73)
 
 class ScreenState(Enum):
@@ -152,12 +157,12 @@ SHOW_PLUM = ClueCard("What Happened?", "Anyone holding the Prof. Plum card must 
 
 # Misc:
 PLAYER_TO_COLOUR = {
-    0: ORANGE,
-    1: ORANGE,
-    2: ORANGE,
-    3: ORANGE,
-    4: ORANGE,
-    5: ORANGE,
+    0: RED,
+    1: MUSTARD,
+    2: PINK,
+    3: GREEN,
+    4: LIGHT_BLUE,
+    5: PURPLE,
 }
 ALLOWED_KEYS = [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_a, pygame.K_b,
                 pygame.K_c, pygame.K_d, pygame.K_e, pygame.K_f, pygame.K_g, pygame.K_h, pygame.K_i, pygame.K_j, pygame.K_k, pygame.K_l, pygame.K_m, pygame.K_n,

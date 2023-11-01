@@ -144,7 +144,7 @@ def draw_window():  # Game Logic and Display
 
 def draw_game_board():
     for location in Game.LOCATIONS:
-        pygame.draw.polygon(WINDOW, PINK, location.corners)
+        pygame.draw.polygon(WINDOW, WHITE, location.corners)
         draw_text(location.displayName, SMALL_FONT, BACKGROUND, location.center)
     for square in SQUARES:
         pygame.draw.rect(WINDOW, WHITE, square.currentRect)
