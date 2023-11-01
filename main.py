@@ -43,6 +43,12 @@ def draw_window():  # Game Logic and Display
         WINDOW.fill(BACKGROUND)
         draw_text("How many players?", MEDIUM_FONT, ORANGE, (960, 290))
         back_button = Button("Back", 960, 690, 60)
+        if Game.CLUE_CARDS_ACTIVE:
+            clue_cards_toggle = Button("Disable Clue Cards", 960, 230, 60)
+        else:
+            clue_cards_toggle = Button("Enable Clue Cards", 960, 230, 60)
+        if clue_cards_toggle.check_click():
+            Game.CLUE_CARDS_ACTIVE = not Game.CLUE_CARDS_ACTIVE
         two_button = Button("Two Players", 730, 455, 60, SMALL_FONT, BACKGROUND, ORANGE, 210)
         four_button = Button("Four Players", 960, 455, 60, SMALL_FONT, BACKGROUND, ORANGE, 210)
         six_button = Button("Six Players", 1190, 455, 60, SMALL_FONT, BACKGROUND, ORANGE, 210)
@@ -51,23 +57,23 @@ def draw_window():  # Game Logic and Display
         if back_button.check_click():
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif two_button.check_click():
-            start_new_thread(start_server, (2, Game.USER_TEXT))
+            start_new_thread(start_server, (2, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif three_button.check_click():
-            start_new_thread(start_server, (3, Game.USER_TEXT))
+            start_new_thread(start_server, (3, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif four_button.check_click():
-            start_new_thread(start_server, (4, Game.USER_TEXT))
+            start_new_thread(start_server, (4, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif five_button.check_click():
-            start_new_thread(start_server, (5, Game.USER_TEXT))
+            start_new_thread(start_server, (5, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
         elif six_button.check_click():
-            start_new_thread(start_server, (6, Game.USER_TEXT))
+            start_new_thread(start_server, (6, Game.USER_TEXT, Game.CLUE_CARD_DECK, Game.CLUE_CARDS_ACTIVE))
             Game.HAS_SERVER = True
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
     elif Game.SCREEN_STATE == ScreenState.NAME_PLAYER:
@@ -129,6 +135,8 @@ def draw_window():  # Game Logic and Display
             response = Game.NETWORK.send("?")
             if response:
                 Game.PLAYERS = response[0]
+                Game.CLUE_CARD_DECK = response[1]
+                Game.CLUE_CARDS_ACTIVE = response[2]
                 Game.SCREEN_STATE = ScreenState.PLAYING_GAME
                 Game.CLUE_SHEET = ClueSheet()
         temp_button = Button("Quit", 960, 900, 60)
@@ -149,11 +157,15 @@ def draw_game_board():
     for square in SQUARES:
         pygame.draw.rect(WINDOW, WHITE, square.currentRect)
     for player in Game.PLAYERS:
-        if player.location is Square:
+        if isinstance(player.location, Square):
             player_location = (player.location.topLeft[0] + 21, player.location.topLeft[1] + 21)
         else:
             player_location = (50, 50)
-        pygame.draw.circle(WINDOW, player.playerColour, player_location, 36)
+        pygame.draw.circle(WINDOW, player.playerColour, player_location, 18)
+    if Game.CLUE_CARDS_ACTIVE:
+        clue_rect = pygame.Rect((542, 513), (100, 140))
+        pygame.draw.rect(WINDOW, WHITE, clue_rect, 0, 10)
+        pygame.draw.rect(WINDOW, BLACK, clue_rect, 5, 10)
 
 
 def check_click_location(location):

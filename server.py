@@ -2,6 +2,7 @@ import socket
 from _thread import *
 import pickle
 from player import Player
+import random
 
 port = 5555
 
@@ -11,6 +12,8 @@ class Server:
     player_count = 0
     client_addresses = []
     players = []
+    clue_cards = []
+    clue_cards_active = False
 
 
 def threaded_client(conn, ip):
@@ -23,7 +26,7 @@ def threaded_client(conn, ip):
             else:
                 if data == "?":
                     if Server.added_players == Server.player_count:
-                        data = (Server.players, 1)
+                        data = (Server.players, Server.clue_cards, Server.clue_cards_active)
                     else:
                         data = False
                 elif data[0] == "Player":
@@ -37,6 +40,7 @@ def threaded_client(conn, ip):
                         data = Server.player_count
                         Server.added_players += 1
                         if Server.added_players == Server.player_count:
+                            random.shuffle(Server.clue_cards)
                             players = Server.players.copy()
                             Server.players.clear()
                             players.sort(key=sort_by_number)
@@ -65,8 +69,10 @@ def check_server(server):
         return False
 
 
-def start_server(count, server):
+def start_server(count, server, clue_cards, clue_active):
     Server.player_count = count
+    Server.clue_cards = clue_cards
+    Server.clue_cards_active = clue_active
     Server.sock.listen(Server.player_count)
     print("Waiting for Connection, Server Started at " + server)
     while True:

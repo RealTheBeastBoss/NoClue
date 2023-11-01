@@ -53,6 +53,7 @@ MUSTARD = (255, 252, 71)
 GREEN = (0, 169, 0)
 LIGHT_BLUE = (0, 185, 227)
 PURPLE = (179, 0, 255)
+BLACK = (0, 0, 0)
 BACKGROUND = (26, 15, 73)
 
 class ScreenState(Enum):
@@ -63,6 +64,40 @@ class ScreenState(Enum):
     PLAYING_GAME = 5
 
 # region
+# Game Cards:
+PROF_PLUM = GameCard(CardType.SUSPECT, "Professor Plum", "prof_plum.png")
+
+# Clue Cards:
+SHOW_DINING = ClueCard("Where?", "Anyone holding the Dining Room card must reveal it!", "Dinner is served.")
+SHOW_MUSTARD = ClueCard("What Happened?", "Anyone holding the Col. Mustard card must reveal it!", "That's curious, Colonel Mustard is limping.")
+CHOOSE_PLAYER_REVEAL = ClueCard("Under Pressure!", "Choose the guiltiest-looking player to reveal one card from their hand.")
+SHOW_HALL = ClueCard("Where?", "Anyone holding the Hall card must reveal it!", "There's a heavy knock at the front door.")
+CHOOSE_WEAPON_REVEAL = ClueCard("Look What I Found!", "Name one weapon you want to be revealed.", "It couldn't possibly be...")
+SHOW_CANDLESTICK = ClueCard("What Was That?", "Anyone holding the Candlestick card must reveal it!", "Oh no, the electricity has gone again.")
+SHOW_GREEN = ClueCard("What Happened?", "Anyone holding the Rev. Green card must reveal it!", "How odd, Reverend Green is sitting alone and in silence.")
+SHOW_KITCHEN = ClueCard("Where?", "Anyone holding the Kitchen card must reveal it!", "The oven timer goes off!")
+SHOW_ROPE = ClueCard("What Was That?", "Anyone holding the Rope card must reveal it!", "Someone's alibi is beginning to fray at the ends.")
+SECRET_PASSAGE = ClueCard("Creeeeak!", "Make any room, that room connects to all secret passages.", "Find a secret passage.")
+SHOW_LEFT = ClueCard("You Don't Say!", "All players show one card to the next player.", "There's always time for a good gossip.")
+SHOW_LEAD_PIPE = ClueCard("What Was That?", "Anyone holding the Lead Pipe card must reveal it!", "It's become a real weight in your pocket.")
+SHOW_DAGGER = ClueCard("What Was That?", "Anyone holding the Dagger card must reveal it!", "We need to sharpen our investigating skills.")
+CHOOSE_SUSPECT_REVEAL = ClueCard("Airtight Alibi!", "Name one suspect you want revealed.", "It couldn't possibly be...")
+SHOW_BALLROOM = ClueCard("Where?", "Anyone holding the Ballroom card must reveal it!", "A waltz starts echoing around Tudor Mansion.")
+SHOW_LOUNGE = ClueCard("Where?", "Anyone holding the Lounge card must reveal it!", "This is no time to relax!")
+SHOW_WRENCH = ClueCard("What Was That?", "Anyone holding the Wrench card must reveal it!", "We will get to the truth!")
+SHOW_SCARLETT = ClueCard("What Happened?", "Anyone holding the Miss Scarlett card must reveal it!", "Hold on, that's a scratch on Miss Scarlett's cheek.")
+SHOW_CONSERVATORY = ClueCard("Where?", "Anyone holding the Conservatory card must reveal it!", "These plants really do need some water.")
+ROOM_CHOICE = ClueCard("Screeeeam!", "All players rush to the room of their choice.")
+SHOW_BILLIARD = ClueCard("Where?", "Anyone holding the Billiard Room card must reveal it!", "That's your cue!")
+SHOW_LIBRARY = ClueCard("Where?", "Anyone holding the Library card must reveal it!", "There's only one place that book could have come from.")
+ALL_REVEAL = ClueCard("Dun-Dun-Duuun!", "All players reveal one card from their hand.")
+SHOW_STUDY = ClueCard("Where?", "Anyone holding the Study card must reveal it!", "The telephone jangles everybody's nerves.")
+SHOW_REVOLVER = ClueCard("What Was That?", "Anyone holding the Revolver card must reveal it!", "We must trigger a reaction.")
+CHOOSE_LOCATION_REVEAL = ClueCard("Wink Wink!", "Name one location you want revealed.", "It couldn't possibly be...")
+SHOW_PEACOCK = ClueCard("What Happened?", "Anyone holding the Mrs Peacock card must reveal it!", "Wait a minute, Mrs Peacock was last seen with Black.")
+SHOW_ORCHID = ClueCard("What Happened?", "Anyone holding the Doctor Orchid card must reveal it!", "Hmmm, Doctor Orchid has a bandage on her hand.")
+SHOW_PLUM = ClueCard("What Happened?", "Anyone holding the Prof. Plum card must reveal it!", "Look, the arm of Professor Plum's glasses has been hastily fixed with tape")
+
 # Locations:
 BALLROOM = Location("Ballroom", (570, 196), (485, 46), (655, 46), (655, 89), (741, 89), (741, 345), (399, 345), (399, 89), (485, 89), (485, 46))
 CONSERVATORY = Location("Conservatory", (957, 153), (829, 46), (1085, 46), (1085, 216), (1042, 216), (1042, 259), (829, 259), (829, 46))
@@ -116,44 +151,13 @@ class Game:
     CLUE_SHEET = None
     FAILED_SELECTION = False
     LOCATIONS = [BALLROOM, CONSERVATORY, BILLIARD_ROOM, LIBRARY, STUDY, HALL, LOUNGE, DINING_ROOM, KITCHEN]
+    CLUE_CARD_DECK = [SHOW_SCARLETT, SHOW_MUSTARD, SHOW_ORCHID, SHOW_GREEN, SHOW_PEACOCK, SHOW_PLUM, SHOW_CANDLESTICK, SHOW_DAGGER, SHOW_LEAD_PIPE, SHOW_REVOLVER, SHOW_ROPE, SHOW_WRENCH, SHOW_BALLROOM, SHOW_BILLIARD,
+                      SHOW_CONSERVATORY, SHOW_DINING, SHOW_HALL, SHOW_KITCHEN, SHOW_LIBRARY, SHOW_LOUNGE, SHOW_STUDY, CHOOSE_PLAYER_REVEAL, CHOOSE_SUSPECT_REVEAL, CHOOSE_WEAPON_REVEAL, CHOOSE_LOCATION_REVEAL,
+                      SECRET_PASSAGE, ROOM_CHOICE, ALL_REVEAL, SHOW_LEFT]
     # Events:
     BUTTONS_ENABLED = True
     LEFT_MOUSE_RELEASED = False
     ENTER_PRESSED = False
-
-# Game Cards:
-PROF_PLUM = GameCard(CardType.SUSPECT, "Professor Plum", "prof_plum.png")
-
-# Clue Cards:
-SHOW_DINING = ClueCard("Where?", "Anyone holding the Dining Room card must reveal it!", "Dinner is served.")
-SHOW_MUSTARD = ClueCard("What Happened?", "Anyone holding the Col. Mustard card must reveal it!", "That's curious, Colonel Mustard is limping.")
-CHOOSE_PLAYER_REVEAL = ClueCard("Under Pressure!", "Choose the guiltiest-looking player to reveal one card from their hand.")
-SHOW_HALL = ClueCard("Where?", "Anyone holding the Hall card must reveal it!", "There's a heavy knock at the front door.")
-CHOOSE_WEAPON_REVEAL = ClueCard("Look What I Found!", "Name one weapon you want to be revealed.", "It couldn't possibly be...")
-SHOW_CANDLESTICK = ClueCard("What Was That?", "Anyone holding the Candlestick card must reveal it!", "Oh no, the electricity has gone again.")
-SHOW_GREEN = ClueCard("What Happened?", "Anyone holding the Rev. Green card must reveal it!", "How odd, Reverend Green is sitting alone and in silence.")
-SHOW_KITCHEN = ClueCard("Where?", "Anyone holding the Kitchen card must reveal it!", "The oven timer goes off!")
-SHOW_ROPE = ClueCard("What Was That?", "Anyone holding the Rope card must reveal it!", "Someone's alibi is beginning to fray at the ends.")
-SECRET_PASSAGE = ClueCard("Creeeeak!", "Make any room, that room connects to all secret passages.", "Find a secret passage.")
-SHOW_LEFT = ClueCard("You Don't Say!", "All players show one card to the next player.", "There's always time for a good gossip.")
-SHOW_LEAD_PIPE = ClueCard("What Was That?", "Anyone holding the Lead Pipe card must reveal it!", "It's become a real weight in your pocket.")
-SHOW_DAGGER = ClueCard("What Was That?", "Anyone holding the Dagger card must reveal it!", "We need to sharpen our investigating skills.")
-CHOOSE_SUSPECT_REVEAL = ClueCard("Airtight Alibi!", "Name one suspect you want revealed.", "It couldn't possibly be...")
-SHOW_BALLROOM = ClueCard("Where?", "Anyone holding the Ballroom card must reveal it!", "A waltz starts echoing around Tudor Mansion.")
-SHOW_LOUNGE = ClueCard("Where?", "Anyone holding the Lounge card must reveal it!", "This is no time to relax!")
-SHOW_WRENCH = ClueCard("What Was That?", "Anyone holding the Wrench card must reveal it!", "We will get to the truth!")
-SHOW_SCARLETT = ClueCard("What Happened?", "Anyone holding the Miss Scarlett card must reveal it!", "Hold on, that's a scratch on Miss Scarlett's cheek.")
-SHOW_CONSERVATORY = ClueCard("Where?", "Anyone holding the Conservatory card must reveal it!", "These plants really do need some water.")
-ROOM_CHOICE = ClueCard("Screeeeam!", "All players rush to the room of their choice.")
-SHOW_BILLIARD = ClueCard("Where?", "Anyone holding the Billiard Room card must reveal it!", "That's your cue!")
-SHOW_LIBRARY = ClueCard("Where?", "Anyone holding the Library card must reveal it!", "There's only one place that book could have come from.")
-ALL_REVEAL = ClueCard("Dun-Dun-Duuun!", "All players reveal one card from their hand.")
-SHOW_STUDY = ClueCard("Where?", "Anyone holding the Study card must reveal it!", "The telephone jangles everybody's nerves.")
-SHOW_REVOLVER = ClueCard("What Was That?", "Anyone holding the Revolver card must reveal it!", "We must trigger a reaction.")
-CHOOSE_LOCATION_REVEAL = ClueCard("Wink Wink!", "Name one location you want revealed.", "It couldn't possibly be...")
-SHOW_PEACOCK = ClueCard("What Happened?", "Anyone holding the Mrs Peacock card must reveal it!", "Wait a minute, Mrs Peacock was last seen with Black.")
-SHOW_ORCHID = ClueCard("What Happened?", "Anyone holding the Doctor Orchid card must reveal it!", "Hmmm, Doctor Orchid has a bandage on her hand.")
-SHOW_PLUM = ClueCard("What Happened?", "Anyone holding the Prof. Plum card must reveal it!", "Look, the arm of Professor Plum's glasses has been hastily fixed with tape")
 
 # Misc:
 PLAYER_TO_COLOUR = {
