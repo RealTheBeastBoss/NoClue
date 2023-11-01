@@ -26,11 +26,16 @@ def threaded_client(conn, ip):
                         data = (Server.players, 1)
                     else:
                         data = False
-                elif data[0] == "Name":
-                    print("From " + str(ip[0]) + ", Received Player Name: " + str(data[1]))
-                    Server.players.append(Player(Server.added_players, data[1]))
-                    data = (Server.added_players, Server.player_count)
-                    Server.added_players += 1
+                elif data[0] == "Player":
+                    print("From " + str(ip[0]) + ", Received Player: " + str(data[1]))
+                    for player in Server.players:
+                        if player.playerNumber == data[1]:
+                            data = False
+                            break
+                    if data:
+                        Server.players.append(Player(data[1]))
+                        data = Server.player_count
+                        Server.added_players += 1
                 if data:
                     print("Sending " + str(data) + " to " + ip[0])
                 conn.sendall(pickle.dumps(data))

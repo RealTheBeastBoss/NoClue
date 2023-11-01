@@ -1,12 +1,43 @@
-import pygame
 from card import *
 from location import *
+from pathfinding.core.grid import Grid
+from pathfinding.finder.a_star import AStarFinder
 
 pygame.font.init()
 FPS = 60
 WIDTH, HEIGHT = 1920, 1080
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 BUTTON_COOLDOWN_EVENT = pygame.USEREVENT + 1
+BOARD_MATRIX = [
+   # 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # 1
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 2
+    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],  # 3
+    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],  # 4
+    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],  # 5
+    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],  # 6
+    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0],  # 7
+    [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],  # 8
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 9
+    [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 10
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 11
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 12
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 13
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],  # 14
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 15
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 16
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 17
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 18
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],  # 19
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],  # 20
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],  # 21
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 22
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 23
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],  # 24
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   # 25
+]
+GRID = Grid(matrix=BOARD_MATRIX)
+FINDER = AStarFinder()
 
 # Game Fonts:
 SMALL_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 30)
@@ -16,6 +47,7 @@ BIG_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 90)
 # Game Colours:
 ORANGE = (255, 102, 0)
 PINK = (230, 73, 198)
+WHITE = (255, 255, 255)
 BACKGROUND = (26, 15, 73)
 
 class ScreenState(Enum):
@@ -24,6 +56,47 @@ class ScreenState(Enum):
     CREATE_SERVER = 3
     NAME_PLAYER = 4
     PLAYING_GAME = 5
+
+# region
+# Locations:
+BALLROOM = Location("Ballroom", (570, 196), (485, 46), (655, 46), (655, 89), (741, 89), (741, 345), (399, 345), (399, 89), (485, 89), (485, 46))
+CONSERVATORY = Location("Conservatory", (957, 153), (829, 46), (1085, 46), (1085, 216), (1042, 216), (1042, 259), (829, 259), (829, 46))
+BILLIARD_ROOM = Location("Billiard Room", (957, 454), (829, 347), (1085, 347), (1085, 560), (829, 560), (829, 347))
+LIBRARY = Location("Library", (936, 712), (829, 605), (1042, 605), (1042, 648), (1085, 648), (1085, 775), (1042, 775), (1042, 818), (829, 818), (829, 775), (786, 775), (786, 648), (829, 648), (829, 605))
+STUDY = Location("Study", (936, 991), (786, 906), (1085, 906), (1085, 1077), (829, 1077), (829, 1033), (786, 1033), (786, 906))
+HALL = Location("Hall", (570, 927), (442, 777), (698, 777), (698, 1077), (442, 1076), (442, 777))
+LOUNGE = Location("Lounge", (205, 948), (55, 820), (354, 820), (354, 1034), (312, 1034), (312, 1077), (55, 1077), (55, 820))
+DINING_ROOM = Location("Dining Room", (226, 539), (55, 390), (268, 390), (268, 433), (397, 433), (397, 689), (55, 689), (55, 390))
+KITCHEN = Location("Kitchen", (183, 174), (55, 46), (311, 46), (311, 302), (98, 302), (98, 259), (55, 259), (55, 46))
+
+# Squares:
+ORCHID_START = Square(9, 0)
+GREEN_START = Square(14, 0)
+PEACOCK_START = Square(23, 7)
+MUSTARD_START = Square(0, 17)
+PLUM_START = Square(23, 19)
+SCARLETT_START = Square(7, 24)
+SQUARES = [ORCHID_START, GREEN_START, PEACOCK_START, MUSTARD_START, PLUM_START, SCARLETT_START, Square(7, 1), Square(8, 1), Square(9, 1), Square(14, 1), Square(15, 1), Square(16, 1), Square(6, 2), Square(7, 2),
+           Square(16, 2), Square(17, 2), Square(6, 3), Square(7, 3), Square(16, 3), Square(17, 3), Square(6, 4), Square(7, 4), Square(16, 4), Square(17, 4),
+           Square(6, 5), Square(7, 5), Square(16, 5), Square(17, 5), Square(6, 6), Square(7, 6), Square(16, 6), Square(17, 6), Square(18, 6), Square(19, 6),
+           Square(20, 6), Square(21, 6), Square(22, 6), Square(0, 7), Square(1, 7), Square(2, 7), Square(3, 7), Square(4, 7), Square(5, 7), Square(6, 7),
+           Square(7, 7), Square(16, 7), Square(17, 7), Square(18, 7), Square(19, 7), Square(20, 7), Square(21, 7), Square(22, 7), Square(1, 8), Square(2, 8),
+           Square(3, 8), Square(4, 8), Square(5, 8), Square(6, 8), Square(7, 8), Square(8, 8), Square(9, 8), Square(10, 8), Square(11, 8), Square(12, 8),
+           Square(13, 8), Square(14, 8), Square(15, 8), Square(16, 8), Square(17, 8), Square(5, 9), Square(6, 9), Square(7, 9), Square(8, 9), Square(9, 9),
+           Square(10, 9), Square(11, 9), Square(12, 9), Square(13, 9), Square(14, 9), Square(15, 9), Square(16, 9), Square(17, 9), Square(8, 10),
+           Square(9, 10), Square(15, 10), Square(16, 10), Square(17, 10), Square(8, 11), Square(9, 11), Square(15, 11), Square(16, 11), Square(17, 11),
+           Square(8, 12), Square(9, 12), Square(15, 12), Square(16, 12), Square(17, 12), Square(8, 13), Square(9, 13), Square(15, 13), Square(16, 13),
+           Square(17, 13), Square(18, 13), Square(19, 13), Square(20, 13), Square(21, 13), Square(22, 13), Square(8, 14), Square(9, 14), Square(15, 14),
+           Square(16, 14), Square(17, 14), Square(8, 15), Square(9, 15), Square(15, 15), Square(16, 15), Square(1, 16), Square(2, 16), Square(3, 16),
+           Square(4, 16), Square(5, 16), Square(6, 16), Square(7, 16), Square(8, 16), Square(9, 16), Square(15, 16), Square(16, 16),
+           Square(1, 17), Square(2, 17), Square(3, 17), Square(4, 17), Square(5, 17), Square(6, 17), Square(7, 17), Square(8, 17), Square(9, 17),
+           Square(10, 17), Square(11, 17), Square(12, 17), Square(13, 17), Square(14, 17), Square(15, 17), Square(16, 17), Square(1, 18), Square(2, 18),
+           Square(3, 18), Square(4, 18), Square(5, 18), Square(6, 18), Square(7, 18), Square(8, 18), Square(15, 18), Square(16, 18), Square(17, 18),
+           Square(7, 19), Square(8, 19), Square(15, 19), Square(16, 19), Square(17, 19), Square(18, 19), Square(19, 19), Square(20, 19), Square(21, 19),
+           Square(22, 19), Square(7, 20), Square(8, 20), Square(15, 20), Square(16, 20), Square(17, 20), Square(18, 20), Square(19, 20),
+           Square(20, 20), Square(21, 20), Square(22, 20), Square(7, 21), Square(8, 21), Square(15, 21), Square(16, 21), Square(7, 22), Square(8, 22),
+           Square(15, 22), Square(16, 22), Square(7, 23), Square(8, 23), Square(15, 23), Square(16, 23), Square(16, 24)]
+# endregion
 
 class Game:
     NETWORK = None
@@ -36,14 +109,12 @@ class Game:
     CAN_INPUT_TEXT = False
     PLAYERS = None
     CLUE_SHEET = None
+    FAILED_SELECTION = False
+    LOCATIONS = [BALLROOM, CONSERVATORY, BILLIARD_ROOM, LIBRARY, STUDY, HALL, LOUNGE, DINING_ROOM, KITCHEN]
     # Events:
     BUTTONS_ENABLED = True
     LEFT_MOUSE_RELEASED = False
     ENTER_PRESSED = False
-
-# Locations:
-BALLROOM = Location("Ballroom", (23, 45), (56, 78), (23, 45))
-LOCATIONS = [BALLROOM]
 
 # Game Cards:
 PROF_PLUM = GameCard(CardType.SUSPECT, "Professor Plum", "prof_plum.png")

@@ -73,13 +73,23 @@ def draw_window():  # Game Logic and Display
     elif Game.SCREEN_STATE == ScreenState.NAME_PLAYER:
         WINDOW.fill(BACKGROUND)
         if Game.PLAYER_COUNT == 69:
-            draw_text("What will your name be?", MEDIUM_FONT, ORANGE, (960, 250))
-            draw_text_input()
-            if Game.ENTER_PRESSED and Game.USER_TEXT != "":
-                data = ("Name", Game.USER_TEXT)
+            if Game.FAILED_SELECTION:
+                draw_text("That Character has been taken already", SMALL_FONT, ORANGE, (960, 200))
+            draw_text("What will your character be?", MEDIUM_FONT, ORANGE, (960, 250))
+            scarlett_button = Button("Miss Scarlett", 960, 330, 60)
+            mustard_button = Button("Col. Mustard", 960, 415, 60)
+            plum_button = Button("Prof. Plum", 960, 500, 60)
+            peacock_button = Button("Mrs Peacock", 960, 585, 60)
+            green_button = Button("Rev. Green", 960, 670, 60)
+            orchid_button = Button("Dr Orchid", 960, 755, 60)
+            if scarlett_button.check_click():
+                data = ("Player", 0)
+                Game.CLIENT_NUMBER = 0
                 response = Game.NETWORK.send(data)
-                Game.CLIENT_NUMBER = response[0]
-                Game.PLAYER_COUNT = response[1]
+                if response:
+                    Game.PLAYER_COUNT = response
+                else:
+                    Game.FAILED_SELECTION = True
         else:
             draw_text("Waiting for the Game to be Ready", MEDIUM_FONT, ORANGE, (960, 250))
             response = Game.NETWORK.send("?")
@@ -93,11 +103,23 @@ def draw_window():  # Game Logic and Display
     elif Game.SCREEN_STATE == ScreenState.PLAYING_GAME:
         WINDOW.fill(BACKGROUND)
         draw_game_board()
+        temp_button = Button("Quit", 1300, 540, 60)
+        if temp_button.check_click():
+            pygame.quit()
 
 
 def draw_game_board():
-    for location in LOCATIONS:
+    for location in Game.LOCATIONS:
         pygame.draw.polygon(WINDOW, PINK, location.corners)
+        draw_text(location.displayName, SMALL_FONT, BACKGROUND, location.center)
+    for square in SQUARES:
+        pygame.draw.rect(WINDOW, WHITE, square.currentRect)
+    for player in Game.PLAYERS:
+        if player.location is Square:
+            player_location = (player.location.topLeft[0] + 21, player.location.topLeft[1] + 21)
+        else:
+            player_location = (50, 50)
+        pygame.draw.circle(WINDOW, player.playerColour, player_location, 36)
 
 
 def check_click_location(location):
