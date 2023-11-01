@@ -155,7 +155,7 @@ def draw_window():  # Game Logic and Display
     elif Game.SCREEN_STATE == ScreenState.PLAYING_GAME:
         WINDOW.fill(BACKGROUND)
         draw_game_board()
-        for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER])):
+        for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER].cards)):
             draw_text(Game.PLAYERS[Game.CLIENT_NUMBER].cards[x].displayName, SMALL_FONT, WHITE, (1700, 55 + (x * 30)))
         temp_button = Button("Quit", 1300, 540, 60)
         if temp_button.check_click():
