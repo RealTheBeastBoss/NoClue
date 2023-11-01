@@ -1,5 +1,6 @@
 import pygame
 from card import *
+from location import *
 
 pygame.font.init()
 FPS = 60
@@ -14,6 +15,7 @@ BIG_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 90)
 
 # Game Colours:
 ORANGE = (255, 102, 0)
+PINK = (230, 73, 198)
 BACKGROUND = (26, 15, 73)
 
 class ScreenState(Enum):
@@ -38,6 +40,10 @@ class Game:
     BUTTONS_ENABLED = True
     LEFT_MOUSE_RELEASED = False
     ENTER_PRESSED = False
+
+# Locations:
+BALLROOM = Location("Ballroom", (23, 45), (56, 78), (23, 45))
+LOCATIONS = [BALLROOM]
 
 # Game Cards:
 PROF_PLUM = GameCard(CardType.SUSPECT, "Professor Plum", "prof_plum.png")

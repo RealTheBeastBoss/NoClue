@@ -90,6 +90,14 @@ def draw_window():  # Game Logic and Display
         temp_button = Button("Quit", 960, 900, 60)
         if temp_button.check_click():
             pygame.quit()
+    elif Game.SCREEN_STATE == ScreenState.PLAYING_GAME:
+        WINDOW.fill(BACKGROUND)
+        draw_game_board()
+
+
+def draw_game_board():
+    for location in LOCATIONS:
+        pygame.draw.polygon(WINDOW, PINK, location.corners)
 
 
 def check_click_location(location):
