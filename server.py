@@ -36,6 +36,13 @@ def threaded_client(conn, ip):
                         Server.players.append(Player(data[1]))
                         data = Server.player_count
                         Server.added_players += 1
+                        if Server.added_players == Server.player_count:
+                            players = Server.players.copy()
+                            Server.players.clear()
+                            players.sort(key=sort_by_number)
+                            for x in range(len(players)):
+                                players[x].playerIndex = x
+                                Server.players.append(players[x])
                 if data:
                     print("Sending " + str(data) + " to " + ip[0])
                 conn.sendall(pickle.dumps(data))
@@ -43,6 +50,10 @@ def threaded_client(conn, ip):
             break
     print(ip[0] + " Lost Connection")
     conn.close()
+
+
+def sort_by_number(e):
+    return e.playerNumber
 
 
 def check_server(server):

@@ -84,7 +84,41 @@ def draw_window():  # Game Logic and Display
             orchid_button = Button("Dr Orchid", 960, 755, 60)
             if scarlett_button.check_click():
                 data = ("Player", 0)
-                Game.CLIENT_NUMBER = 0
+                response = Game.NETWORK.send(data)
+                if response:
+                    Game.PLAYER_COUNT = response
+                else:
+                    Game.FAILED_SELECTION = True
+            elif mustard_button.check_click():
+                data = ("Player", 1)
+                response = Game.NETWORK.send(data)
+                if response:
+                    Game.PLAYER_COUNT = response
+                else:
+                    Game.FAILED_SELECTION = True
+            elif orchid_button.check_click():
+                data = ("Player", 2)
+                response = Game.NETWORK.send(data)
+                if response:
+                    Game.PLAYER_COUNT = response
+                else:
+                    Game.FAILED_SELECTION = True
+            elif green_button.check_click():
+                data = ("Player", 3)
+                response = Game.NETWORK.send(data)
+                if response:
+                    Game.PLAYER_COUNT = response
+                else:
+                    Game.FAILED_SELECTION = True
+            elif peacock_button.check_click():
+                data = ("Player", 4)
+                response = Game.NETWORK.send(data)
+                if response:
+                    Game.PLAYER_COUNT = response
+                else:
+                    Game.FAILED_SELECTION = True
+            elif plum_button.check_click():
+                data = ("Player", 5)
                 response = Game.NETWORK.send(data)
                 if response:
                     Game.PLAYER_COUNT = response
