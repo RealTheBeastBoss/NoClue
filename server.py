@@ -3,7 +3,7 @@ from _thread import *
 import pickle
 from player import Player
 import random
-from card import CardType
+from game import *
 
 port = 5555
 
@@ -17,6 +17,15 @@ class Server:
     clue_cards_active = False
     game_cards = None
     final_cards = None
+    quits_to_send = []
+    locations_to_send = []
+    locations = []
+    games_to_start = []
+    turn_stage = None
+    turn_stages_to_send = []
+    dice_values = None
+    dice_to_send = []
+    players_to_send = []
 
 
 def threaded_client(conn, ip):
@@ -27,11 +36,62 @@ def threaded_client(conn, ip):
                 print(ip[0] + " Disconnected")
                 break
             else:
-                if data == "?":
+                if len(Server.locations_to_send) == 0:
+                    Server.locations.clear()
+                if len(Server.games_to_start) == 0:
+                    Server.clue_cards.clear()
+                    Server.players.clear()
+                if data == "!":
+                    data = {}
+                    if ip in Server.quits_to_send:
+                        data["quit"] = True
+                        Server.quits_to_send.remove(ip)
+                    if ip in Server.locations_to_send:
+                        data["locations"] = Server.locations
+                        Server.locations_to_send.remove(ip)
+                    if ip in Server.turn_stages_to_send:
+                        data["turn"] = Server.turn_stage
+                        Server.turn_stages_to_send.remove(ip)
+                    if ip in Server.dice_to_send:
+                        data["dice"] = Server.dice_values
+                        Server.dice_to_send.remove(ip)
+                    if ip in Server.players_to_send:
+                        data["players"] = Server.players
+                        Server.players_to_send.remove(ip)
+                elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
+                        Server.games_to_start.remove(ip)
                     else:
                         data = False
+                elif data == "quit":
+                    Server.quits_to_send = Server.client_addresses.copy()
+                    Server.quits_to_send.remove(ip)
+                    data = False
+                elif data[0] == "Turn":
+                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    Server.turn_stage = data[1]
+                    Server.turn_stages_to_send = Server.client_addresses.copy()
+                    Server.turn_stages_to_send.remove(ip)
+                    data = False
+                elif data[0] == "TurnPlayer":
+                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    Server.turn_stage = data[1]
+                    Server.turn_stages_to_send = Server.client_addresses.copy()
+                    Server.turn_stages_to_send.remove(ip)
+                    Server.players.append(data[2])
+                    Server.players_to_send = Server.client_addresses.copy()
+                    Server.players_to_send.remove(ip)
+                    data = False
+                elif data[0] == "TurnDice":
+                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    Server.turn_stage = data[1]
+                    Server.turn_stages_to_send = Server.client_addresses.copy()
+                    Server.turn_stages_to_send.remove(ip)
+                    Server.dice_values = (data[2], data[3])
+                    Server.dice_to_send = Server.client_addresses.copy()
+                    Server.dice_to_send.remove(ip)
+                    data = False
                 elif data[0] == "Player":
                     print("From " + str(ip[0]) + ", Received Player: " + str(data[1]))
                     for player in Server.players:
@@ -43,6 +103,7 @@ def threaded_client(conn, ip):
                         data = Server.player_count
                         Server.added_players += 1
                         if Server.added_players == Server.player_count:
+                            Server.games_to_start = Server.client_addresses.copy()
                             suspect_cards = []
                             weapon_cards = []
                             location_cards = []
@@ -59,6 +120,16 @@ def threaded_client(conn, ip):
                             Server.final_cards = (suspect_cards.pop(), weapon_cards.pop(), location_cards.pop())
                             cards = suspect_cards + weapon_cards + location_cards
                             random.shuffle(cards)
+                            if Server.player_count == 2:
+                                location_indexes = []
+                                while len(location_indexes) != 4:
+                                    number = random.randrange(0, 9)
+                                    if number not in location_indexes:
+                                        location_indexes.append(number)
+                                for index in location_indexes:
+                                    Game.LOCATIONS[index].card = cards.pop()
+                                    Server.locations.append(Game.LOCATIONS[index])
+                                    Server.locations_to_send = Server.client_addresses.copy()
                             selected_player = 0
                             while len(cards) > 0:
                                 Server.players[selected_player].cards.append(cards.pop())
@@ -96,11 +167,11 @@ def check_server(server):
         return False
 
 
-def start_server(count, server, clue_cards, clue_active, game_cards):
+def start_server(count, server):
     Server.player_count = count
-    Server.clue_cards = clue_cards
-    Server.clue_cards_active = clue_active
-    Server.game_cards = game_cards
+    Server.clue_cards = Game.CLUE_CARD_DECK
+    Server.clue_cards_active = Game.CLUE_CARDS_ACTIVE
+    Server.game_cards = GAME_CARDS
     Server.sock.listen(Server.player_count)
     print("Waiting for Connection, Server Started at " + server)
     while True:
