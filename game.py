@@ -1,7 +1,6 @@
 from card import *
 from location import *
 from pathfinding.core.grid import Grid
-from pathfinding.finder.a_star import AStarFinder
 import os
 
 pygame.font.init()
@@ -38,13 +37,42 @@ BOARD_MATRIX = [
     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   # 25
 ]
 GRID = Grid(matrix=BOARD_MATRIX)
-FINDER = AStarFinder()
 
 # Game Fonts:
 TINY_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 20)
 SMALL_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 30)
 MEDIUM_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 60)
 BIG_FONT = pygame.font.Font(os.path.join("Fonts", "beastboss_font.ttf"), 90)
+
+def get_wrapped_text(text, font, max_width):
+    text_lines = []
+    word_list = []
+    for word in text.split():
+        word_list.append(word)
+        test_text = ""
+        for x in range(len(word_list)):
+            test_text += word_list[x]
+            if x != len(word_list) - 1:
+                test_text += " "
+        width = font.size(test_text)[0]
+        if width > max_width:
+            next_word = word_list.pop()
+            test_text = ""
+            for x in range(len(word_list)):
+                test_text += word_list[x]
+                if x != len(word_list) - 1:
+                    test_text += " "
+            text_lines.append(test_text)
+            word_list.clear()
+            word_list.append(next_word)
+    if len(word_list) > 0:
+        test_text = ""
+        for x in range(len(word_list)):
+            test_text += word_list[x]
+            if x != len(word_list) - 1:
+                test_text += " "
+        text_lines.append(test_text)
+    return text_lines
 
 # Game Colours:
 ORANGE = (255, 102, 0)
@@ -68,9 +96,11 @@ class ScreenState(Enum):
 class TurnStage(Enum):
     START = 1
     ROLL_DICE = 2
-    MOVEMENT = 3
-    MAKE_GUESS = 4
-    END_TURN = 5
+    DRAW_CLUE_CARD = 3
+    USE_CLUE_CARD = 4
+    MOVEMENT = 5
+    MAKE_GUESS = 6
+    END_TURN = 7
 
 # region
 # Game Cards:
@@ -99,35 +129,35 @@ GAME_CARDS = [MISS_SCARLETT, COL_MUSTARD, DR_ORCHID, REV_GREEN, MRS_PEACOCK, PRO
               HALL_CARD, KITCHEN_CARD, LIBRARY_CARD, LOUNGE_CARD, STUDY_CARD]
 
 # Clue Cards:
-SHOW_DINING = ClueCard("Where?", "Anyone holding the Dining Room card must reveal it!", "Dinner is served.")
-SHOW_MUSTARD = ClueCard("What Happened?", "Anyone holding the Col. Mustard card must reveal it!", "That's curious, Colonel Mustard is limping.")
-CHOOSE_PLAYER_REVEAL = ClueCard("Under Pressure!", "Choose the guiltiest-looking player to reveal one card from their hand.")
-SHOW_HALL = ClueCard("Where?", "Anyone holding the Hall card must reveal it!", "There's a heavy knock at the front door.")
-CHOOSE_WEAPON_REVEAL = ClueCard("Look What I Found!", "Name one weapon you want to be revealed.", "It couldn't possibly be...")
-SHOW_CANDLESTICK = ClueCard("What Was That?", "Anyone holding the Candlestick card must reveal it!", "Oh no, the electricity has gone again.")
-SHOW_GREEN = ClueCard("What Happened?", "Anyone holding the Rev. Green card must reveal it!", "How odd, Reverend Green is sitting alone and in silence.")
-SHOW_KITCHEN = ClueCard("Where?", "Anyone holding the Kitchen card must reveal it!", "The oven timer goes off!")
-SHOW_ROPE = ClueCard("What Was That?", "Anyone holding the Rope card must reveal it!", "Someone's alibi is beginning to fray at the ends.")
-SECRET_PASSAGE = ClueCard("Creeeeak!", "Make any room, that room connects to all secret passages.", "Find a secret passage.")
-SHOW_LEFT = ClueCard("You Don't Say!", "All players show one card to the next player.", "There's always time for a good gossip.")
-SHOW_LEAD_PIPE = ClueCard("What Was That?", "Anyone holding the Lead Pipe card must reveal it!", "It's become a real weight in your pocket.")
-SHOW_DAGGER = ClueCard("What Was That?", "Anyone holding the Dagger card must reveal it!", "We need to sharpen our investigating skills.")
-CHOOSE_SUSPECT_REVEAL = ClueCard("Airtight Alibi!", "Name one suspect you want revealed.", "It couldn't possibly be...")
-SHOW_BALLROOM = ClueCard("Where?", "Anyone holding the Ballroom card must reveal it!", "A waltz starts echoing around Tudor Mansion.")
-SHOW_LOUNGE = ClueCard("Where?", "Anyone holding the Lounge card must reveal it!", "This is no time to relax!")
-SHOW_WRENCH = ClueCard("What Was That?", "Anyone holding the Wrench card must reveal it!", "We will get to the truth!")
-SHOW_SCARLETT = ClueCard("What Happened?", "Anyone holding the Miss Scarlett card must reveal it!", "Hold on, that's a scratch on Miss Scarlett's cheek.")
-SHOW_CONSERVATORY = ClueCard("Where?", "Anyone holding the Conservatory card must reveal it!", "These plants really do need some water.")
-ROOM_CHOICE = ClueCard("Screeeeam!", "All players rush to the room of their choice.")
-SHOW_BILLIARD = ClueCard("Where?", "Anyone holding the Billiard Room card must reveal it!", "That's your cue!")
-SHOW_LIBRARY = ClueCard("Where?", "Anyone holding the Library card must reveal it!", "There's only one place that book could have come from.")
-ALL_REVEAL = ClueCard("Dun-Dun-Duuun!", "All players reveal one card from their hand.")
-SHOW_STUDY = ClueCard("Where?", "Anyone holding the Study card must reveal it!", "The telephone jangles everybody's nerves.")
-SHOW_REVOLVER = ClueCard("What Was That?", "Anyone holding the Revolver card must reveal it!", "We must trigger a reaction.")
-CHOOSE_LOCATION_REVEAL = ClueCard("Wink Wink!", "Name one location you want revealed.", "It couldn't possibly be...")
-SHOW_PEACOCK = ClueCard("What Happened?", "Anyone holding the Mrs Peacock card must reveal it!", "Wait a minute, Mrs Peacock was last seen with Black.")
-SHOW_ORCHID = ClueCard("What Happened?", "Anyone holding the Doctor Orchid card must reveal it!", "Hmmm, Doctor Orchid has a bandage on her hand.")
-SHOW_PLUM = ClueCard("What Happened?", "Anyone holding the Prof. Plum card must reveal it!", "Look, the arm of Professor Plum's glasses has been hastily fixed with tape")
+SHOW_DINING = ClueCard("Where?", get_wrapped_text("Anyone holding the Dining Room card must reveal it!", TINY_FONT, 280), get_wrapped_text("Dinner is served.", TINY_FONT, 280))
+SHOW_MUSTARD = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Col. Mustard card must reveal it!", TINY_FONT, 280), get_wrapped_text("That's curious, Colonel Mustard is limping.", TINY_FONT, 280))
+CHOOSE_PLAYER_REVEAL = ClueCard("Under Pressure!", get_wrapped_text("Choose the guiltiest-looking player to reveal one card from their hand.", TINY_FONT, 280))
+SHOW_HALL = ClueCard("Where?", get_wrapped_text("Anyone holding the Hall card must reveal it!", TINY_FONT, 280), get_wrapped_text("There's a heavy knock at the front door.", TINY_FONT, 280))
+CHOOSE_WEAPON_REVEAL = ClueCard("Look What I Found!", get_wrapped_text("Name one weapon you want to be revealed.", TINY_FONT, 280), get_wrapped_text("It couldn't possibly be...", TINY_FONT, 280))
+SHOW_CANDLESTICK = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Candlestick card must reveal it!", TINY_FONT, 280), get_wrapped_text("Oh no, the electricity has gone again.", TINY_FONT, 280))
+SHOW_GREEN = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Rev. Green card must reveal it!", TINY_FONT, 280), get_wrapped_text("How odd, Reverend Green is sitting alone and in silence.", TINY_FONT, 280))
+SHOW_KITCHEN = ClueCard("Where?", get_wrapped_text("Anyone holding the Kitchen card must reveal it!", TINY_FONT, 280), get_wrapped_text("The oven timer goes off!", TINY_FONT, 280))
+SHOW_ROPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Rope card must reveal it!", TINY_FONT, 280), get_wrapped_text("Someone's alibi is beginning to fray at the ends.", TINY_FONT, 280))
+SECRET_PASSAGE = ClueCard("Creeeeak!", get_wrapped_text("Make any room, that room connects to all secret passages.", TINY_FONT, 280), get_wrapped_text("Find a secret passage.", TINY_FONT, 280))
+SHOW_LEFT = ClueCard("You Don't Say!", get_wrapped_text("All players show one card to the next player.", TINY_FONT, 280), get_wrapped_text("There's always time for a good gossip.", TINY_FONT, 280))
+SHOW_LEAD_PIPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Lead Pipe card must reveal it!", TINY_FONT, 280), get_wrapped_text("It's become a real weight in your pocket.", TINY_FONT, 280))
+SHOW_DAGGER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Dagger card must reveal it!", TINY_FONT, 280), get_wrapped_text("We need to sharpen our investigating skills.", TINY_FONT, 280))
+CHOOSE_SUSPECT_REVEAL = ClueCard("Airtight Alibi!", get_wrapped_text("Name one suspect you want revealed.", TINY_FONT, 280), get_wrapped_text("It couldn't possibly be...", TINY_FONT, 280))
+SHOW_BALLROOM = ClueCard("Where?", get_wrapped_text("Anyone holding the Ballroom card must reveal it!", TINY_FONT, 280), get_wrapped_text("A waltz starts echoing around Tudor Mansion.", TINY_FONT, 280))
+SHOW_LOUNGE = ClueCard("Where?", get_wrapped_text("Anyone holding the Lounge card must reveal it!", TINY_FONT, 280), get_wrapped_text("This is no time to relax!", TINY_FONT, 280))
+SHOW_WRENCH = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Wrench card must reveal it!", TINY_FONT, 280), get_wrapped_text("We will get to the truth!", TINY_FONT, 280))
+SHOW_SCARLETT = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Miss Scarlett card must reveal it!", TINY_FONT, 280), get_wrapped_text("Hold on, that's a scratch on Miss Scarlett's cheek.", TINY_FONT, 280))
+SHOW_CONSERVATORY = ClueCard("Where?", get_wrapped_text("Anyone holding the Conservatory card must reveal it!", TINY_FONT, 280), get_wrapped_text("These plants really do need some water.", TINY_FONT, 280))
+ROOM_CHOICE = ClueCard("Screeeeam!", get_wrapped_text("All players rush to the room of their choice.", TINY_FONT, 280))
+SHOW_BILLIARD = ClueCard("Where?", get_wrapped_text("Anyone holding the Billiard Room card must reveal it!", TINY_FONT, 280), get_wrapped_text("That's your cue!", TINY_FONT, 280))
+SHOW_LIBRARY = ClueCard("Where?", get_wrapped_text("Anyone holding the Library card must reveal it!", TINY_FONT, 280), get_wrapped_text("There's only one place that book could have come from.", TINY_FONT, 280))
+ALL_REVEAL = ClueCard("Dun-Dun-Duuun!", get_wrapped_text("All players reveal one card from their hand.", TINY_FONT, 280))
+SHOW_STUDY = ClueCard("Where?", get_wrapped_text("Anyone holding the Study card must reveal it!", TINY_FONT, 280), get_wrapped_text("The telephone jangles everybody's nerves.", TINY_FONT, 280))
+SHOW_REVOLVER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Revolver card must reveal it!", TINY_FONT, 280), get_wrapped_text("We must trigger a reaction.", TINY_FONT, 280))
+CHOOSE_LOCATION_REVEAL = ClueCard("Wink Wink!", get_wrapped_text("Name one location you want revealed.", TINY_FONT, 280), get_wrapped_text("It couldn't possibly be...", TINY_FONT, 280))
+SHOW_PEACOCK = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Mrs Peacock card must reveal it!", TINY_FONT, 280), get_wrapped_text("Wait a minute, Mrs Peacock was last seen with Black.", TINY_FONT, 280))
+SHOW_ORCHID = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Doctor Orchid card must reveal it!", TINY_FONT, 280), get_wrapped_text("Hmmm, Doctor Orchid has a bandage on her hand.", TINY_FONT, 280))
+SHOW_PLUM = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Prof. Plum card must reveal it!", TINY_FONT, 280), get_wrapped_text("Look, the arm of Professor Plum's glasses has been hastily fixed with tape.", TINY_FONT, 280))
 
 # Squares:
 ORCHID_START = Square(9, 0)
@@ -175,15 +205,78 @@ SQUARES = [ORCHID_START, GREEN_START, PEACOCK_START, MUSTARD_START, PLUM_START, 
            BALLROOM_SQUARE4, CONSERVATORY_SQUARE, BILLIARD_SQUARE1, BILLIARD_SQUARE2, LIBRARY_SQUARE1, LIBRARY_SQUARE2, STUDY_SQUARE, HALL_SQUARE1, HALL_SQUARE2, LOUNGE_SQUARE, DINING_SQUARE1, DINING_SQUARE2, KITCHEN_SQUARE]
 
 # Locations:
-BALLROOM = Location("Ballroom", (570, 196), [BALLROOM_SQUARE1, BALLROOM_SQUARE2, BALLROOM_SQUARE3, BALLROOM_SQUARE4], (485, 46), (655, 46), (655, 89), (741, 89), (741, 345), (399, 345), (399, 89), (485, 89), (485, 46))
-CONSERVATORY = Location("Conservatory", (957, 153), [CONSERVATORY_SQUARE], (829, 46), (1085, 46), (1085, 216), (1042, 216), (1042, 259), (829, 259), (829, 46))
-BILLIARD_ROOM = Location("Billiard Room", (957, 454), [BILLIARD_SQUARE1, BILLIARD_SQUARE2], (829, 347), (1085, 347), (1085, 560), (829, 560), (829, 347))
-LIBRARY = Location("Library", (936, 712), [LIBRARY_SQUARE1, LIBRARY_SQUARE2], (829, 605), (1042, 605), (1042, 648), (1085, 648), (1085, 775), (1042, 775), (1042, 818), (829, 818), (829, 775), (786, 775), (786, 648), (829, 648), (829, 605))
-STUDY = Location("Study", (936, 991), [STUDY_SQUARE], (786, 906), (1085, 906), (1085, 1077), (829, 1077), (829, 1033), (786, 1033), (786, 906))
-HALL = Location("Hall", (570, 927), [HALL_SQUARE1, HALL_SQUARE2], (442, 777), (698, 777), (698, 1077), (442, 1076), (442, 777))
-LOUNGE = Location("Lounge", (205, 948), [LOUNGE_SQUARE], (55, 820), (354, 820), (354, 1034), (312, 1034), (312, 1077), (55, 1077), (55, 820))
-DINING_ROOM = Location("Dining Room", (226, 539), [DINING_SQUARE1, DINING_SQUARE2], (55, 390), (268, 390), (268, 433), (397, 433), (397, 689), (55, 689), (55, 390))
-KITCHEN = Location("Kitchen", (183, 174), [KITCHEN_SQUARE], (55, 46), (311, 46), (311, 302), (98, 302), (98, 259), (55, 259), (55, 46))
+BALLROOM = Location(BALLROOM_CARD, (570, 196), [BALLROOM_SQUARE1, BALLROOM_SQUARE2, BALLROOM_SQUARE3, BALLROOM_SQUARE4], {
+    0: (484, 131),
+    1: (570, 131),
+    2: (656, 131),
+    3: (484, 260),
+    4: (570, 260),
+    5: (656, 260)
+}, (485, 46), (655, 46), (655, 89), (741, 89), (741, 345), (399, 345), (399, 89), (485, 89), (485, 46))
+CONSERVATORY = Location(CONSERVATORY_CARD, (957, 153), [CONSERVATORY_SQUARE], {
+    0: (871, 88),
+    1: (957, 88),
+    2: (1043, 88),
+    3: (871, 217),
+    4: (957, 217),
+    5: (1043, 157)
+}, (829, 46), (1085, 46), (1085, 216), (1042, 216), (1042, 259), (829, 259), (829, 46))
+BILLIARD_ROOM = Location(BILLIARD_ROOM_CARD, (957, 454), [BILLIARD_SQUARE1, BILLIARD_SQUARE2], {
+    0: (871, 389),
+    1: (957, 389),
+    2: (1043, 389),
+    3: (871, 518),
+    4: (957, 518),
+    5: (1043, 518)
+}, (829, 347), (1085, 347), (1085, 560), (829, 560), (829, 347))
+LIBRARY = Location(LIBRARY_CARD, (936, 712), [LIBRARY_SQUARE1, LIBRARY_SQUARE2], {
+    0: (871, 647),
+    1: (936, 647),
+    2: (1000, 647),
+    3: (871, 776),
+    4: (936, 776),
+    5: (1000, 776)
+}, (829, 605), (1042, 605), (1042, 648), (1085, 648), (1085, 775), (1042, 775), (1042, 818), (829, 818), (829, 775), (786, 775), (786, 648), (829, 648), (829, 605))
+STUDY = Location(STUDY_CARD, (936, 991), [STUDY_SQUARE], {
+    0: (871, 948),
+    1: (936, 948),
+    2: (1000, 948),
+    3: (871, 1034),
+    4: (936, 1034),
+    5: (1000, 1034)
+}, (786, 906), (1085, 906), (1085, 1077), (829, 1077), (829, 1033), (786, 1033), (786, 906))
+HALL = Location(HALL_CARD, (570, 927), [HALL_SQUARE1, HALL_SQUARE2], {
+    0: (484, 819),
+    1: (570, 819),
+    2: (656, 819),
+    3: (484, 1034),
+    4: (570, 1034),
+    5: (656, 1034)
+}, (442, 777), (698, 777), (698, 1077), (442, 1076), (442, 777))
+LOUNGE = Location(LOUNGE_CARD, (205, 948), [LOUNGE_SQUARE], {
+    0: (97, 862),
+    1: (205, 862),
+    2: (313, 862),
+    3: (97, 1034),
+    4: (205, 1034),
+    5: (313, 991)
+}, (55, 820), (354, 820), (354, 1034), (312, 1034), (312, 1077), (55, 1077), (55, 820))
+DINING_ROOM = Location(DINING_ROOM_CARD, (226, 539), [DINING_SQUARE1, DINING_SQUARE2], {
+    0: (97, 476),
+    1: (226, 476),
+    2: (355, 476),
+    3: (97, 605),
+    4: (226, 605),
+    5: (355, 605)
+}, (55, 390), (268, 390), (268, 433), (397, 433), (397, 689), (55, 689), (55, 390))
+KITCHEN = Location(KITCHEN_CARD, (183, 174), [KITCHEN_SQUARE], {
+    0: (97, 131),
+    1: (183, 131),
+    2: (269, 131),
+    3: (97, 217),
+    4: (183, 217),
+    5: (269, 217)
+}, (55, 46), (311, 46), (311, 302), (98, 302), (98, 259), (55, 259), (55, 46))
 # endregion
 
 class Game:
@@ -202,8 +295,12 @@ class Game:
     CLUE_SHEET_OPEN = False
     FAILED_SELECTION = False
     HAS_DIED = False
-    SELECTED_PLACE = None
+    SELECTED_SQUARE = None
+    SELECTED_LOCATION = None
     SQUARE_FAIL_DISTANCE = 0
+    CLUE_TO_DRAW = 0
+    DISPLAYED_CLUE_CARD = None
+    PLAYER_GUESS = []
     CARD_NAMES = []
     LOCATIONS = [BALLROOM, CONSERVATORY, BILLIARD_ROOM, LIBRARY, STUDY, HALL, LOUNGE, DINING_ROOM, KITCHEN]
     CLUE_CARD_DECK = [SHOW_SCARLETT, SHOW_MUSTARD, SHOW_ORCHID, SHOW_GREEN, SHOW_PEACOCK, SHOW_PLUM, SHOW_CANDLESTICK, SHOW_DAGGER, SHOW_LEAD_PIPE, SHOW_REVOLVER, SHOW_ROPE, SHOW_WRENCH, SHOW_BALLROOM, SHOW_BILLIARD,

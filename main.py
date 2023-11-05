@@ -1,5 +1,6 @@
 import random
 import pygame
+import sys
 from game import *
 from button import Button
 from server import check_server, start_server, close_server
@@ -20,6 +21,7 @@ def draw_window():  # Game Logic and Display
         play_button = Button("Play", 960, 490, 60)
         if quit_button.check_click():
             pygame.quit()
+            sys.exit()
         elif play_button.check_click():
             Game.SCREEN_STATE = ScreenState.JOIN_NETWORK
     elif Game.SCREEN_STATE == ScreenState.JOIN_NETWORK:
@@ -159,6 +161,7 @@ def draw_window():  # Game Logic and Display
         temp_button = Button("Quit", 960, 900, 60)
         if temp_button.check_click():
             pygame.quit()
+            sys.exit()
     elif Game.SCREEN_STATE == ScreenState.PLAYING_GAME:
         check_updates()
         current_player = Game.PLAYERS[Game.CURRENT_PLAYER]
@@ -170,8 +173,11 @@ def draw_window():  # Game Logic and Display
         if current_player.playerIndex != Game.CLIENT_NUMBER:
             draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, ORANGE, (1350, 100))
             if not Game.CLUE_SHEET_OPEN:
-                DICE1.draw((1518, 414))
-                DICE2.draw((1614, 414))
+                if Game.DISPLAYED_CLUE_CARD is not None:
+                    draw_clue_card(Game.DISPLAYED_CLUE_CARD, (1450, 350))
+                else:
+                    DICE1.draw((1518, 414))
+                    DICE2.draw((1614, 414))
         elif Game.TURN_STAGE == TurnStage.START:
             if Game.HAS_DIED:
                 draw_text("You have already failed, no turn for you", SMALL_FONT, ORANGE, (1350, 100))
@@ -188,34 +194,105 @@ def draw_window():  # Game Logic and Display
                 if roll_button.check_click():
                     DICE1.value = random.randrange(1, 7)
                     DICE2.value = random.randrange(1, 7)
-                    Game.TURN_STAGE = TurnStage.MOVEMENT
+                    if Game.CLUE_CARDS_ACTIVE:
+                        Game.CLUE_TO_DRAW = 0
+                        if DICE1.value == 1:
+                            Game.CLUE_TO_DRAW += 1
+                        if DICE2.value == 1:
+                            Game.CLUE_TO_DRAW += 1
+                        if Game.CLUE_TO_DRAW > 0:
+                            Game.TURN_STAGE = TurnStage.DRAW_CLUE_CARD
+                        else:
+                            Game.TURN_STAGE = TurnStage.MOVEMENT
+                    else:
+                        Game.TURN_STAGE = TurnStage.MOVEMENT
                     Game.NETWORK.send(("TurnDice", Game.TURN_STAGE, DICE1.value, DICE2.value))
         elif Game.TURN_STAGE == TurnStage.MOVEMENT:
             draw_text("Select a Place to go or Choose your Option:", SMALL_FONT, ORANGE, (1350, 100))
             if Game.SQUARE_FAIL_DISTANCE != 0:
-                draw_text("")
+                draw_text("That square is too far away! " + str(Game.SQUARE_FAIL_DISTANCE), SMALL_FONT, ORANGE, (1350, 180))
+            for location in Game.LOCATIONS:
+                if check_click_location(location):
+                    for square in location.enterSquares:
+                        finder = AStarFinder()
+                        path = finder.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].location.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].location.square[1]), GRID.node(square.square[0], square.square[1]), GRID)[0]
+                        GRID.cleanup()
+                        if len(path) - 1 <= DICE1.value + DICE2.value:
+                            Game.SELECTED_LOCATION = location
+                            Game.SELECTED_SQUARE = None
+                            Game.SQUARE_FAIL_DISTANCE = 0
+                            break
             for square in SQUARES:
                 result = check_click_square(square)
                 if result is None:
                     continue
-                elif instanceof(result, Square):
-                    Game.SELECTED_PLACE = result
+                elif isinstance(result, Square):
+                    Game.SELECTED_SQUARE = result
+                    Game.SQUARE_FAIL_DISTANCE = 0
+                    Game.SELECTED_LOCATION = None
                 else:
                     Game.SQUARE_FAIL_DISTANCE = result
+                    Game.SELECTED_SQUARE = None
+                    Game.SELECTED_LOCATION = None
             if not Game.CLUE_SHEET_OPEN:
                 DICE1.draw((1518, 414))
                 DICE2.draw((1614, 414))
-                if instanceof(current_player.location, Location):
+                if Game.SELECTED_SQUARE is not None:
+                    square_button = Button("Go to the Square", 1608, 540, 60)
+                    if square_button.check_click():
+                        to_location = False
+                        for location in Game.LOCATIONS:
+                            for entrance in location.enterSquares:
+                                if Game.SELECTED_SQUARE == entrance:
+                                    current_player.location = location
+                                    Game.TURN_STAGE = TurnStage.MAKE_GUESS
+                                    Game.PLAYER_GUESS[2] = current_player.location.ref
+                                    to_location = True
+                        if not to_location:
+                            current_player.location = Game.SELECTED_SQUARE
+                            Game.TURN_STAGE = TurnStage.END_TURN
+                        Game.SELECTED_SQUARE = None
+                        Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
+                elif Game.SELECTED_LOCATION is not None:
+                    location_button = Button("Go to the " + Game.SELECTED_LOCATION.displayName, 1608, 540, 60)
+                    if location_button.check_click():
+                        current_player.location = Game.SELECTED_LOCATION
+                        Game.SELECTED_LOCATION = None
+                        Game.TURN_STAGE = TurnStage.MAKE_GUESS
+                        Game.PLAYER_GUESS[2] = current_player.location.ref
+                        Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
+                if isinstance(current_player.location, Location):
                     stay_button = Button("Stay where you are", 1608, 575, 60)
                     if stay_button.check_click():
                         Game.TURN_STAGE = TurnStage.MAKE_GUESS
+                        Game.PLAYER_GUESS[2] = current_player.location.ref
                         Game.NETWORK.send(("Turn", Game.TURN_STAGE))
                     if current_player.location.passage is not None:
                         passage_button = Button("Use Secret Passage", 1608, 610, 60)
                         if passage_button.check_click():
                             current_player.location = current_player.location.passage
                             Game.TURN_STAGE = TurnStage.MAKE_GUESS
+                            Game.PLAYER_GUESS[2] = current_player.location.ref
                             Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
+        elif Game.TURN_STAGE == TurnStage.DRAW_CLUE_CARD:
+            draw_text("Draw a Clue Card", SMALL_FONT, ORANGE, (1350, 100))
+            clue_rect = pygame.Rect((515, 463), (154, 240))
+            if Game.DISPLAYED_CLUE_CARD is None and Game.LEFT_MOUSE_RELEASED and clue_rect.collidepoint(pygame.mouse.get_pos()):
+                Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
+                Game.CLUE_TO_DRAW -= 1
+                Game.NETWORK.send("Clue")
+            if not Game.CLUE_SHEET_OPEN:
+                if Game.DISPLAYED_CLUE_CARD is not None:
+                    draw_clue_card(Game.DISPLAYED_CLUE_CARD, (1450, 350))
+                    continue_button = Button("Continue", 1604, 870, 60)
+                    if continue_button.check_click():
+                        Game.TURN_STAGE = TurnStage.USE_CLUE_CARD
+                        Game.NETWORK.send(("Turn", Game.TURN_STAGE))
+                else:
+                    DICE1.draw((1518, 414))
+                    DICE2.draw((1614, 414))
+        elif Game.TURN_STAGE == TurnStage.MAKE_GUESS:
+            draw_text("Select a Suspect and Weapon:", SMALL_FONT, ORANGE, (1350, 100))
         temp_button = Button("Quit", 1300, 540, 60)
         if temp_button.check_click():
             Game.NETWORK.send("quit")
@@ -229,12 +306,16 @@ def draw_game_board():
         if location.card is not None:
             draw_text("(Has a Card)", SMALL_FONT, BACKGROUND, (location.center[0], location.center[1] + 30))
     for square in SQUARES:
-        pygame.draw.rect(WINDOW, WHITE, square.currentRect)
+        if Game.SELECTED_SQUARE == square:
+            colour = ORANGE
+        else:
+            colour = WHITE
+        pygame.draw.rect(WINDOW, colour, square.currentRect)
     for player in Game.PLAYERS:
         if isinstance(player.location, Square):
             player_location = (player.location.topLeft[0] + 21, player.location.topLeft[1] + 21)
         else:
-            player_location = (50, 50)
+            player_location = player.location.player_to_point[player.playerIndex]
         pygame.draw.circle(WINDOW, player.playerColour, player_location, 18)
     if Game.CLUE_CARDS_ACTIVE:
         clue_rect = pygame.Rect((515, 463), (154, 240))
@@ -247,8 +328,10 @@ def draw_game_board():
 def check_updates():
     response = Game.NETWORK.send("!")
     if response:
+        print("From Server, Received: " + str(response))
         if "quit" in response:
             pygame.quit()
+            sys.exit()
         if "locations" in response:
             for location in response["locations"]:
                 for x in range(9):
@@ -263,6 +346,23 @@ def check_updates():
         if "players" in response:
             for player in response["players"]:
                 Game.PLAYERS[player.playerIndex] = player
+        if "clue" in response:
+            if Game.DISPLAYED_CLUE_CARD is None:
+                Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
+            else:
+                Game.DISPLAYED_CLUE_CARD = None
+
+
+def draw_clue_card(card, location):
+    card_rect = pygame.Rect(location, (308, 480))
+    pygame.draw.rect(WINDOW, BLACK, card_rect, 0, 20)
+    pygame.draw.rect(WINDOW, WHITE, card_rect, 10, 20)
+    draw_text(card.title, SMALL_FONT, WHITE, (location[0] + 154, location[1] + 40))
+    for x in range(len(card.action)):
+        draw_text(card.action[x], TINY_FONT, WHITE, (location[0] + 154, location[1] + (200 + (x * 25))))
+    if card.subtitle is not None:
+        for x in range(len(card.subtitle)):
+            draw_text(card.subtitle[x], TINY_FONT, WHITE, (location[0] + 154, location[1] + (380 + (x * 25))))
 
 
 def check_click_location(location):
@@ -278,8 +378,10 @@ def check_click_location(location):
 
 def check_click_square(square):
     if Game.LEFT_MOUSE_RELEASED and square.currentRect.collidepoint(pygame.mouse.get_pos()):
-        path = FINDER.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].currentSquare.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].currentSquare.square[1]),
+        finder = AStarFinder()
+        path = finder.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].location.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].location.square[1]),
                                 GRID.node(square.square[0], square.square[1]), GRID)[0]
+        GRID.cleanup()
         if len(path) - 1 > DICE1.value + DICE2.value:
             return len(path) - 1
         else:
@@ -325,6 +427,7 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+                sys.exit()
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 Game.LEFT_MOUSE_RELEASED = True
             elif event.type == BUTTON_COOLDOWN_EVENT:

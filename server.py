@@ -20,12 +20,12 @@ class Server:
     quits_to_send = []
     locations_to_send = []
     locations = []
-    games_to_start = []
     turn_stage = None
     turn_stages_to_send = []
     dice_values = None
     dice_to_send = []
     players_to_send = []
+    clue_to_send = []
 
 
 def threaded_client(conn, ip):
@@ -38,9 +38,6 @@ def threaded_client(conn, ip):
             else:
                 if len(Server.locations_to_send) == 0:
                     Server.locations.clear()
-                if len(Server.games_to_start) == 0:
-                    Server.clue_cards.clear()
-                    Server.players.clear()
                 if data == "!":
                     data = {}
                     if ip in Server.quits_to_send:
@@ -58,15 +55,22 @@ def threaded_client(conn, ip):
                     if ip in Server.players_to_send:
                         data["players"] = Server.players
                         Server.players_to_send.remove(ip)
+                    if ip in Server.clue_to_send:
+                        data["clue"] = 1
+                        Server.clue_to_send.remove(ip)
                 elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
-                        Server.games_to_start.remove(ip)
                     else:
                         data = False
                 elif data == "quit":
                     Server.quits_to_send = Server.client_addresses.copy()
                     Server.quits_to_send.remove(ip)
+                    data = False
+                elif data == "Clue":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.clue_to_send = Server.client_addresses.copy()
+                    Server.clue_to_send.remove(ip)
                     data = False
                 elif data[0] == "Turn":
                     print("From " + str(ip[0]) + ", Received: " + str(data[1]))
@@ -79,7 +83,7 @@ def threaded_client(conn, ip):
                     Server.turn_stage = data[1]
                     Server.turn_stages_to_send = Server.client_addresses.copy()
                     Server.turn_stages_to_send.remove(ip)
-                    Server.players.append(data[2])
+                    Server.players[data[2].playerIndex] = data[2]
                     Server.players_to_send = Server.client_addresses.copy()
                     Server.players_to_send.remove(ip)
                     data = False

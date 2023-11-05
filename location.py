@@ -1,10 +1,12 @@
 import pygame
 
 class Location:
-    def __init__(self, name, center, squares, *corners):
-        self.displayName = name
+    def __init__(self, card, center, squares, stands, *corners):
+        self.displayName = card.displayName
         self.card = None
+        self.ref = card
         self.enterSquares = squares
+        self.player_to_point = stands
         self.center = center
         self.passage = None
         self.corners = corners[:-1]
