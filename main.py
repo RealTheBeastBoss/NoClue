@@ -365,15 +365,22 @@ def draw_window():  # Game Logic and Display
                             selected_player = Game.CLIENT_NUMBER
                             iterations = 0
                             to_continue = True
-                            while to_continue:
+                            while True:
                                 if iterations > 0 and selected_player == Game.CLIENT_NUMBER:
                                     break
                                 if selected_player == Game.CLIENT_NUMBER:
+                                    if selected_player == Game.PLAYER_COUNT - 1:
+                                        selected_player = 0
+                                    else:
+                                        selected_player += 1
+                                    iterations += 1
                                     continue
                                 for card in Game.PLAYERS[selected_player].cards:
                                     if card.displayName == Game.PLAYER_GUESS[0].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName:
                                         to_continue = False
                                         break
+                                if not to_continue:
+                                    break
                                 if selected_player == Game.PLAYER_COUNT - 1:
                                     selected_player = 0
                                 else:
@@ -443,6 +450,9 @@ def check_updates():
                 Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
             else:
                 Game.DISPLAYED_CLUE_CARD = None
+        if "card_show" in response:
+            Game.PLAYER_SHOWING = response["card_show"][0]
+            Game.PLAYER_GUESS = response["card_show"][1]
 
 
 def draw_clue_card(card, location):

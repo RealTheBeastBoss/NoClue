@@ -1,7 +1,6 @@
 import socket
 import pickle
 
-
 class Network:  # Clients Sending to the Server
     def __init__(self, ip):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

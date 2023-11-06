@@ -84,16 +84,16 @@ def threaded_client(conn, ip):
                     Server.turn_stages_to_send.remove(ip)
                     data = False
                 elif data[0] == "CardShowing":
-                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.turn_stage = data[1]
                     Server.turn_stages_to_send = Server.client_addresses.copy()
                     Server.turn_stages_to_send.remove(ip)
-                    Server.card_showing_data = (data[3], data[2][0], data[2][1], data[2][1])
+                    Server.card_showing_data = (data[3], data[2])
                     Server.card_showings_to_send = Server.client_addresses.copy()
                     Server.card_showings_to_send.remove(ip)
                     data = False
                 elif data[0] == "TurnPlayer":
-                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.turn_stage = data[1]
                     Server.turn_stages_to_send = Server.client_addresses.copy()
                     Server.turn_stages_to_send.remove(ip)
@@ -102,7 +102,7 @@ def threaded_client(conn, ip):
                     Server.players_to_send.remove(ip)
                     data = False
                 elif data[0] == "TurnDice":
-                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.turn_stage = data[1]
                     Server.turn_stages_to_send = Server.client_addresses.copy()
                     Server.turn_stages_to_send.remove(ip)
