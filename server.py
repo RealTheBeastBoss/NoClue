@@ -27,6 +27,7 @@ class Server:
     players_to_send = []
     clue_to_send = []
     card_showings_to_send = []
+    card_showns_to_send = []
     card_showing_data = None
 
 
@@ -63,6 +64,9 @@ def threaded_client(conn, ip):
                     if ip in Server.card_showings_to_send:
                         data["card_show"] = Server.card_showing_data
                         Server.card_showings_to_send.remove(ip)
+                    if ip in Server.card_showns_to_send:
+                        data["show_card"] = Server.card_showing_data
+                        Server.card_showns_to_send.remove(ip)
                 elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
@@ -78,10 +82,16 @@ def threaded_client(conn, ip):
                     Server.clue_to_send.remove(ip)
                     data = False
                 elif data[0] == "Turn":
-                    print("From " + str(ip[0]) + ", Received: " + str(data[1]))
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.turn_stage = data[1]
                     Server.turn_stages_to_send = Server.client_addresses.copy()
                     Server.turn_stages_to_send.remove(ip)
+                    data = False
+                elif data[0] == "ShownCard":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.card_showing_data = data[1]
+                    Server.card_showns_to_send = Server.client_addresses.copy()
+                    Server.card_showns_to_send.remove(ip)
                     data = False
                 elif data[0] == "CardShowing":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
