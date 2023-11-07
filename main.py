@@ -1,6 +1,8 @@
 import random
 import pygame
 import sys
+
+import game
 from game import *
 from button import Button
 from server import check_server, start_server, close_server
@@ -176,10 +178,17 @@ def draw_window():  # Game Logic and Display
             if Game.TURN_STAGE == TurnStage.SHOW_CARD:
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.SHOWN_CARD is not None:
-                        draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 450))
-                        draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 590))
-                        draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 730))
-                        draw_text(Game.PLAYER_SHOWING.playerName + " has showed " + current_player.playerName + " a card", SMALL_FONT, ORANGE, (1503, 400))
+                        if Game.SHOWN_CARD == "Wait":
+                            draw_text("Waiting for others to continue", SMALL_FONT, ORANGE, (1503, 540))
+                        else:
+                            draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 450))
+                            draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 590))
+                            draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 730))
+                            draw_text(Game.PLAYER_SHOWING.playerName + " has showed " + current_player.playerName + " a card", SMALL_FONT, ORANGE, (1503, 400))
+                            continue_button = Button("Continue", 1503, 780, 60)
+                            if continue_button.check_click():
+                                Game.NETWORK.send("TurnClick")
+                                Game.SHOWN_CARD = "Wait"
                     else:
                         draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 300))
                         draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 440))
@@ -204,6 +213,10 @@ def draw_window():  # Game Logic and Display
                                 draw_text(Game.PLAYER_SHOWING.playerName + " has to show a card!", SMALL_FONT, ORANGE, (1503, 650))
                         else:
                             draw_text("Nobody else has the cards accused!", SMALL_FONT, ORANGE, (1503, 650))
+                            continue_button = Button("Continue", 1503, 780, 60)
+                            if continue_button.check_click():
+                                Game.NETWORK.send("TurnClick")
+                                Game.SHOWN_CARD = "Wait"
             else:
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.DISPLAYED_CLUE_CARD is not None:
@@ -248,13 +261,32 @@ def draw_window():  # Game Logic and Display
                 if check_click_location(location):
                     for square in location.enterSquares:
                         finder = AStarFinder()
-                        path = finder.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].location.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].location.square[1]), GRID.node(square.square[0], square.square[1]), GRID)[0]
-                        GRID.cleanup()
-                        if len(path) - 1 <= DICE1.value + DICE2.value:
-                            Game.SELECTED_LOCATION = location
+                        if isinstance(current_player.location, Square):
+                            path = finder.find_path(GRID.node(current_player.location.square[0], current_player.location.square[1]), GRID.node(square.square[0], square.square[1]), GRID)[0]
+                            GRID.cleanup()
+                            if len(path) - 1 <= DICE1.value + DICE2.value:
+                                Game.SELECTED_LOCATION = location
+                                Game.SELECTED_SQUARE = None
+                                Game.SQUARE_FAIL_DISTANCE = 0
+                                break
+                        else:
+                            shortest_number = 0
+                            for enter_square in Game.PLAYERS[Game.CLIENT_NUMBER].location.enterSquares:
+                                path = finder.find_path(GRID.node(enter_square.square[0], enter_square.square[1]), GRID.node(square.square[0], square.square[1]), GRID)[0]
+                                GRID.cleanup()
+                                if len(path) - 1 > DICE1.value + DICE2.value:
+                                    shortest_number = min(shortest_number, len(path) - 1)
+                                else:
+                                    shortest_number = 420
+                                    Game.SELECTED_SQUARE = None
+                                    Game.SQUARE_FAIL_DISTANCE = 0
+                                    Game.SELECTED_LOCATION = location
+                                    break
+                            if shortest_number == 420:
+                                break
+                            Game.SQUARE_FAIL_DISTANCE = shortest_number
+                            Game.SELECTED_LOCATION = None
                             Game.SELECTED_SQUARE = None
-                            Game.SQUARE_FAIL_DISTANCE = 0
-                            break
             for square in SQUARES:
                 result = check_click_square(square)
                 if result is None:
@@ -427,10 +459,17 @@ def draw_window():  # Game Logic and Display
         elif Game.TURN_STAGE == TurnStage.SHOW_CARD:
             if not Game.CLUE_SHEET_OPEN:
                 if Game.SHOWN_CARD is not None:
-                    draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 450))
-                    draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 590))
-                    draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 730))
-                    draw_text(Game.PLAYER_SHOWING.playerName + " showed you the \"" + Game.SHOWN_CARD.displayName + "\" card", SMALL_FONT, ORANGE, (1503, 400))
+                    if Game.SHOWN_CARD == "Wait":
+                        draw_text("Waiting for others to continue", SMALL_FONT, ORANGE, (1503, 540))
+                    else:
+                        draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 450))
+                        draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 590))
+                        draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 730))
+                        draw_text(Game.PLAYER_SHOWING.playerName + " showed you the \"" + Game.SHOWN_CARD.displayName + "\" card", SMALL_FONT, ORANGE, (1503, 400))
+                        continue_button = Button("Continue", 1503, 780, 60)
+                        if continue_button.check_click():
+                            Game.NETWORK.send("TurnClick")
+                            Game.SHOWN_CARD = "Wait"
                 else:
                     draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 400))
                     draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 540))
@@ -439,6 +478,21 @@ def draw_window():  # Game Logic and Display
                         draw_text(Game.PLAYER_SHOWING.playerName + " has to show a card!", SMALL_FONT, ORANGE, (1503, 750))
                     else:
                         draw_text("Nobody else has the cards accused!", SMALL_FONT, ORANGE, (1503, 750))
+                        continue_button = Button("Continue", 1503, 780, 60)
+                        if continue_button.check_click():
+                            Game.NETWORK.send("TurnClick")
+                            Game.SHOWN_CARD = "Wait"
+        elif Game.TURN_STAGE == TurnStage.END_TURN:
+            if not Game.CLUE_SHEET_OPEN:
+                draw_text("Your turn is over now", SMALL_FONT, ORANGE, (1503, 540))
+                end_button = Button("End Turn", 1503, 600, 60)
+                if end_button.check_click():
+                    Game.TURN_STAGE = TurnStage.START
+                    if Game.CURRENT_PLAYER == Game.PLAYER_COUNT - 1:
+                        Game.CURRENT_PLAYER = 0
+                    else:
+                        Game.CURRENT_PLAYER += 1
+                    Game.NETWORK.send("EndTurn")
         temp_button = Button("Quit", 1200, 540, 60)
         if temp_button.check_click():
             Game.NETWORK.send("quit")
@@ -472,6 +526,14 @@ def draw_game_board():
 
 
 def check_updates():
+    if Game.SHOWN_CARD == "Wait":
+        data = Game.NETWORK.send("!!")
+        if data:
+            Game.TURN_STAGE = TurnStage.END_TURN
+            Game.PLAYER_GUESS[0] = None
+            Game.PLAYER_GUESS[1] = None
+            Game.PLAYER_GUESS[2] = None
+            Game.SHOWN_CARD = None
     response = Game.NETWORK.send("!")
     if response:
         print("From Server, Received: " + str(response))
@@ -502,6 +564,12 @@ def check_updates():
             Game.PLAYER_GUESS = response["card_show"][1]
         if "show_card" in response:
             Game.SHOWN_CARD = response["show_card"]
+        if "end_turn" in response:
+            Game.TURN_STAGE = TurnStage.START
+            if Game.CURRENT_PLAYER == Game.PLAYER_COUNT - 1:
+                Game.CURRENT_PLAYER = 0
+            else:
+                Game.CURRENT_PLAYER += 1
 
 
 def draw_clue_card(card, location):
@@ -530,13 +598,24 @@ def check_click_location(location):
 def check_click_square(square):
     if Game.LEFT_MOUSE_RELEASED and square.currentRect.collidepoint(pygame.mouse.get_pos()):
         finder = AStarFinder()
-        path = finder.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].location.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].location.square[1]),
-                                GRID.node(square.square[0], square.square[1]), GRID)[0]
-        GRID.cleanup()
-        if len(path) - 1 > DICE1.value + DICE2.value:
-            return len(path) - 1
+        if isinstance(Game.PLAYERS[Game.CLIENT_NUMBER].location, Square):
+            path = finder.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].location.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].location.square[1]),
+                                    GRID.node(square.square[0], square.square[1]), GRID)[0]
+            GRID.cleanup()
+            if len(path) - 1 > DICE1.value + DICE2.value:
+                return len(path) - 1
+            else:
+                return square
         else:
-            return square
+            shortest_number = 0
+            for enter_square in Game.PLAYERS[Game.CLIENT_NUMBER].location.enterSquares:
+                path = finder.find_path(GRID.node(enter_square.square[0], enter_square.square[1]), GRID.node(square.square[0], square.square[1]), GRID)[0]
+                GRID.cleanup()
+                if len(path) - 1 > DICE1.value + DICE2.value:
+                    shortest_number = min(shortest_number, len(path) - 1)
+                else:
+                    return square
+            return shortest_number
     return None
 
 

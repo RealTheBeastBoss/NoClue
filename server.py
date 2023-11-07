@@ -29,6 +29,8 @@ class Server:
     card_showings_to_send = []
     card_showns_to_send = []
     card_showing_data = None
+    turn_stages_to_get = []
+    turns_to_end = []
 
 
 def threaded_client(conn, ip):
@@ -67,19 +69,34 @@ def threaded_client(conn, ip):
                     if ip in Server.card_showns_to_send:
                         data["show_card"] = Server.card_showing_data
                         Server.card_showns_to_send.remove(ip)
+                    if ip in Server.turns_to_end:
+                        data["end_turn"] = True
+                        Server.turns_to_end.remove(ip)
                 elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
                     else:
                         data = False
+                elif data == "!!":
+                    data = False
+                    if len(Server.turn_stages_to_get) == 0:
+                        data = True
                 elif data == "quit":
                     Server.quits_to_send = Server.client_addresses.copy()
                     Server.quits_to_send.remove(ip)
+                    data = False
+                elif data == "EndTurn":
+                    Server.turns_to_end = Server.client_addresses.copy()
+                    Server.turns_to_end.remove(ip)
                     data = False
                 elif data == "Clue":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.clue_to_send = Server.client_addresses.copy()
                     Server.clue_to_send.remove(ip)
+                    data = False
+                elif data == "TurnClick":
+                    print("From " + str(ip[0]) + ", Received Turn Click")
+                    Server.turn_stages_to_get.remove(ip)
                     data = False
                 elif data[0] == "Turn":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
@@ -92,6 +109,7 @@ def threaded_client(conn, ip):
                     Server.card_showing_data = data[1]
                     Server.card_showns_to_send = Server.client_addresses.copy()
                     Server.card_showns_to_send.remove(ip)
+                    Server.turn_stages_to_get = Server.client_addresses.copy()
                     data = False
                 elif data[0] == "CardShowing":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
@@ -101,6 +119,8 @@ def threaded_client(conn, ip):
                     Server.card_showing_data = (data[3], data[2])
                     Server.card_showings_to_send = Server.client_addresses.copy()
                     Server.card_showings_to_send.remove(ip)
+                    if data[3] is None:
+                        Server.turn_stages_to_get = Server.client_addresses.copy()
                     data = False
                 elif data[0] == "TurnPlayer":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
