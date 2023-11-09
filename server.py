@@ -99,11 +99,6 @@ def threaded_client(conn, ip):
                     Server.turns_to_end = Server.client_addresses.copy()
                     Server.turns_to_end.remove(ip)
                     data = False
-                elif data == "Clue":
-                    print("From " + str(ip[0]) + ", Received: " + str(data))
-                    Server.clue_to_send = Server.client_addresses.copy()
-                    Server.clue_to_send.remove(ip)
-                    data = False
                 elif data == "FinalAccusation":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.finals_to_send = Server.client_addresses.copy()
@@ -112,6 +107,13 @@ def threaded_client(conn, ip):
                 elif data == "TurnClick":
                     print("From " + str(ip[0]) + ", Received Turn Click")
                     Server.turn_stages_to_get.remove(ip)
+                    data = False
+                elif data[0] == "Clue":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.clue_to_send = Server.client_addresses.copy()
+                    Server.clue_to_send.remove(ip)
+                    if data[1].card is not None:
+                        Server.turn_stages_to_get = Server.client_addresses.copy()
                     data = False
                 elif data[0] == "Final":
                     print("From " + str(ip[0]) + ", Received: " + str(data))

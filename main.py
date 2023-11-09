@@ -175,7 +175,12 @@ def draw_window():  # Game Logic and Display
             Game.CLUE_SHEET.draw()
         if current_player.playerIndex != Game.CLIENT_NUMBER:
             draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, ORANGE, (1503, 100))
-            if Game.TURN_STAGE == TurnStage.GAME_OVER:
+            if Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
+                draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
+                if not Game.CLUE_SHEET_OPEN:
+                    if Game.REVEALING_CARD[0] is not None:
+
+            elif Game.TURN_STAGE == TurnStage.GAME_OVER:
                 if Game.WINNER == "Nobody":
                     draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
                 else:
@@ -354,13 +359,14 @@ def draw_window():  # Game Logic and Display
             if Game.DISPLAYED_CLUE_CARD is None and Game.LEFT_MOUSE_RELEASED and clue_rect.collidepoint(pygame.mouse.get_pos()):
                 Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
                 Game.CLUE_TO_DRAW -= 1
-                Game.NETWORK.send("Clue")
+                Game.NETWORK.send(("Clue", Game.DISPLAYED_CLUE_CARD))
                 if Game.DISPLAYED_CLUE_CARD.card is not None:
                     Game.REVEALING_CARD[0] = Game.DISPLAYED_CLUE_CARD.card
                     for player in Game.PLAYERS:
                         for card in player.cards:
                             if card.displayName == Game.REVEALING_CARD[0].displayName:
                                 Game.REVEALING_CARD[1] = player
+                                player.cards.remove(card)
                                 break
                         if Game.REVEALING_CARD[1] is not None:
                             break
@@ -672,11 +678,16 @@ def draw_window():  # Game Logic and Display
                 draw_text(Game.WINNER.displayName + " has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
         elif Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
             draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
-            if Game.REVEALING_CARD[0] is not None:
-                if Game.REVEALING_CARD[1] is None:
-                    draw_text("Nodody has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
-                else:
-                    draw_text(Game.REVEALING_CARD[1].playerName + " has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+            if not Game.CLUE_SHEET_OPEN:
+                if Game.REVEALING_CARD[0] is not None:
+                    if Game.REVEALING_CARD[1] is None:
+                        draw_text("Nobody has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+                    else:
+                        draw_text(Game.REVEALING_CARD[1].playerName + " has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+                    continue_button = Button("Continue", 1503, 610, 60)
+                    if continue_button.check_click():
+                        Game.NETWORK.send("TurnClick")
+                        Game.REVEALING_CARD[0] = "Wait"
         temp_button = Button("Quit", 1200, 540, 60)
         if temp_button.check_click():
             Game.NETWORK.send("quit")
@@ -718,6 +729,11 @@ def check_updates():
             Game.PLAYER_GUESS[1] = None
             Game.PLAYER_GUESS[2] = None
             Game.SHOWN_CARD = None
+    elif Game.REVEALING_CARD[0] == "Wait":
+        data = Game.NETWORK.send("!!")
+        if data:
+            Game.REVEALING_CARD[0] = None
+            Game.REVEALING_CARD[1] = None
     response = Game.NETWORK.send("!")
     if response:
         print("From Server, Received: " + str(response))
@@ -747,6 +763,7 @@ def check_updates():
                         for card in player.cards:
                             if card.displayName == Game.REVEALING_CARD[0].displayName:
                                 Game.REVEALING_CARD[1] = player
+                                player.cards.remove(card)
                                 break
                         if Game.REVEALING_CARD[1] is not None:
                             break
