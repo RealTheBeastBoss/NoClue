@@ -31,6 +31,10 @@ class Server:
     card_showing_data = None
     turn_stages_to_get = []
     turns_to_end = []
+    finals_to_send = []
+    final_succeeded = False
+    accuse_to_send = []
+
 
 
 def threaded_client(conn, ip):
@@ -72,6 +76,12 @@ def threaded_client(conn, ip):
                     if ip in Server.turns_to_end:
                         data["end_turn"] = True
                         Server.turns_to_end.remove(ip)
+                    if ip in Server.finals_to_send:
+                        data["final"] = True
+                        Server.finals_to_send.remove(ip)
+                    if ip in Server.accuse_to_send:
+                        data["accuse"] = Server.final_succeeded
+                        Server.accuse_to_send.remove(ip)
                 elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
@@ -94,10 +104,25 @@ def threaded_client(conn, ip):
                     Server.clue_to_send = Server.client_addresses.copy()
                     Server.clue_to_send.remove(ip)
                     data = False
+                elif data == "FinalAccusation":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.finals_to_send = Server.client_addresses.copy()
+                    Server.finals_to_send.remove(ip)
+                    data = False
                 elif data == "TurnClick":
                     print("From " + str(ip[0]) + ", Received Turn Click")
                     Server.turn_stages_to_get.remove(ip)
                     data = False
+                elif data[0] == "Final":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    if Server.final_cards[0].displayName == data[1][0].displayName and Server.final_cards[1].displayName == data[1][1].displayName and Server.final_cards[2].displayName == data[1][2].displayName:
+                        data = True
+                        Server.final_succeeded = True
+                    else:
+                        data = False
+                        Server.final_succeeded = False
+                    Server.accuse_to_send = Server.client_addresses.copy()
+                    Server.accuse_to_send.remove(ip)
                 elif data[0] == "Turn":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
                     Server.turn_stage = data[1]
@@ -139,6 +164,12 @@ def threaded_client(conn, ip):
                     Server.dice_values = (data[2], data[3])
                     Server.dice_to_send = Server.client_addresses.copy()
                     Server.dice_to_send.remove(ip)
+                    data = False
+                elif data[0] == "JustPlayer":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.players[data[1].playerIndex] = data[1]
+                    Server.players_to_send = Server.client_addresses.copy()
+                    Server.players_to_send.remove(ip)
                     data = False
                 elif data[0] == "Player":
                     print("From " + str(ip[0]) + ", Received Player: " + str(data[1]))

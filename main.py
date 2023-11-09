@@ -175,7 +175,12 @@ def draw_window():  # Game Logic and Display
             Game.CLUE_SHEET.draw()
         if current_player.playerIndex != Game.CLIENT_NUMBER:
             draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, ORANGE, (1503, 100))
-            if Game.TURN_STAGE == TurnStage.SHOW_CARD:
+            if Game.TURN_STAGE == TurnStage.GAME_OVER:
+                if Game.WINNER == "Nobody":
+                    draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+                else:
+                    draw_text(Game.WINNER.displayName + " has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+            elif Game.TURN_STAGE == TurnStage.SHOW_CARD:
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.SHOWN_CARD is not None:
                         if Game.SHOWN_CARD == "Wait":
@@ -217,15 +222,19 @@ def draw_window():  # Game Logic and Display
                             if continue_button.check_click():
                                 Game.NETWORK.send("TurnClick")
                                 Game.SHOWN_CARD = "Wait"
+            elif Game.TURN_STAGE == TurnStage.FINAL_ACCUSATION:
+                draw_text(current_player.playerName + " is making a Final Accusation!", SMALL_FONT, ORANGE, (1503, 150))
+                if not Game.CLUE_SHEET_OPEN:
+                    pass
             else:
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.DISPLAYED_CLUE_CARD is not None:
-                        draw_clue_card(Game.DISPLAYED_CLUE_CARD, (1450, 350))
+                        draw_clue_card(Game.DISPLAYED_CLUE_CARD, (1349, 350))
                     else:
-                        DICE1.draw((1518, 414))
-                        DICE2.draw((1614, 414))
+                        DICE1.draw((1417, 414))
+                        DICE2.draw((1513, 414))
         elif Game.TURN_STAGE == TurnStage.START:
-            if Game.HAS_DIED:
+            if current_player.playerDied:
                 draw_text("You have already failed, no turn for you", SMALL_FONT, ORANGE, (1503, 100))
                 end_turn_button = Button("End Turn", 1503, 145, 60)
                 if end_turn_button.check_click():
@@ -234,9 +243,9 @@ def draw_window():  # Game Logic and Display
             Game.TURN_STAGE = TurnStage.ROLL_DICE
         elif Game.TURN_STAGE == TurnStage.ROLL_DICE:
             if not Game.CLUE_SHEET_OPEN:
-                DICE1.draw((1518, 414))
-                DICE2.draw((1614, 414))
-                roll_button = Button("Roll the Dice", 1608, 540, 60)
+                DICE1.draw((1417, 414))
+                DICE2.draw((1513, 414))
+                roll_button = Button("Roll the Dice", 1507, 540, 60)
                 if roll_button.check_click():
                     DICE1.value = random.randrange(1, 7)
                     DICE2.value = random.randrange(1, 7)
@@ -300,10 +309,10 @@ def draw_window():  # Game Logic and Display
                     Game.SELECTED_SQUARE = None
                     Game.SELECTED_LOCATION = None
             if not Game.CLUE_SHEET_OPEN:
-                DICE1.draw((1518, 414))
-                DICE2.draw((1614, 414))
+                DICE1.draw((1417, 414))
+                DICE2.draw((1513, 414))
                 if Game.SELECTED_SQUARE is not None:
-                    square_button = Button("Go to the Square", 1608, 540, 60)
+                    square_button = Button("Go to the Square", 1507, 540, 60)
                     if square_button.check_click():
                         to_location = False
                         for location in Game.LOCATIONS:
@@ -319,7 +328,7 @@ def draw_window():  # Game Logic and Display
                         Game.SELECTED_SQUARE = None
                         Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
                 elif Game.SELECTED_LOCATION is not None:
-                    location_button = Button("Go to the " + Game.SELECTED_LOCATION.displayName, 1608, 540, 60)
+                    location_button = Button("Go to the " + Game.SELECTED_LOCATION.displayName, 1507, 540, 60)
                     if location_button.check_click():
                         current_player.location = Game.SELECTED_LOCATION
                         Game.SELECTED_LOCATION = None
@@ -327,135 +336,152 @@ def draw_window():  # Game Logic and Display
                         Game.PLAYER_GUESS[2] = current_player.location.ref
                         Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
                 if isinstance(current_player.location, Location):
-                    stay_button = Button("Stay where you are", 1608, 575, 60)
+                    stay_button = Button("Stay where you are", 1507, 610, 60)
                     if stay_button.check_click():
                         Game.TURN_STAGE = TurnStage.MAKE_GUESS
                         Game.PLAYER_GUESS[2] = current_player.location.ref
                         Game.NETWORK.send(("Turn", Game.TURN_STAGE))
-                    if current_player.location.passage is not None:
-                        passage_button = Button("Use Secret Passage", 1608, 610, 60)
+                    for x in range(len(current_player.location.passage)):
+                        passage_button = Button("Passage to " + current_player.location.passage[x].displayName, 1507, 680 + (x * 65), 60)
                         if passage_button.check_click():
-                            current_player.location = current_player.location.passage
+                            current_player.location = current_player.location.passage[x]
                             Game.TURN_STAGE = TurnStage.MAKE_GUESS
                             Game.PLAYER_GUESS[2] = current_player.location.ref
                             Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
         elif Game.TURN_STAGE == TurnStage.DRAW_CLUE_CARD:
-            draw_text("Draw a Clue Card", SMALL_FONT, ORANGE, (1350, 100))
+            draw_text("Draw a Clue Card", SMALL_FONT, ORANGE, (1503, 100))
             clue_rect = pygame.Rect((515, 463), (154, 240))
             if Game.DISPLAYED_CLUE_CARD is None and Game.LEFT_MOUSE_RELEASED and clue_rect.collidepoint(pygame.mouse.get_pos()):
                 Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
                 Game.CLUE_TO_DRAW -= 1
                 Game.NETWORK.send("Clue")
+                if Game.DISPLAYED_CLUE_CARD.card is not None:
+                    Game.REVEALING_CARD[0] = Game.DISPLAYED_CLUE_CARD.card
+                    for player in Game.PLAYERS:
+                        for card in player.cards:
+                            if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                Game.REVEALING_CARD[1] = player
+                                break
+                        if Game.REVEALING_CARD[1] is not None:
+                            break
             if not Game.CLUE_SHEET_OPEN:
                 if Game.DISPLAYED_CLUE_CARD is not None:
-                    draw_clue_card(Game.DISPLAYED_CLUE_CARD, (1450, 350))
-                    continue_button = Button("Continue", 1604, 870, 60)
+                    draw_clue_card(Game.DISPLAYED_CLUE_CARD, (1349, 350))
+                    continue_button = Button("Continue", 1503, 870, 60)
                     if continue_button.check_click():
                         Game.TURN_STAGE = TurnStage.USE_CLUE_CARD
                         Game.NETWORK.send(("Turn", Game.TURN_STAGE))
                 else:
-                    DICE1.draw((1518, 414))
-                    DICE2.draw((1614, 414))
+                    DICE1.draw((1417, 414))
+                    DICE2.draw((1513, 414))
         elif Game.TURN_STAGE == TurnStage.MAKE_GUESS:
-            draw_text("Select a Suspect and Weapon:", SMALL_FONT, ORANGE, (1503, 100))
-            if not Game.CLUE_SHEET_OPEN:
-                if Game.ACCUSE_SUSPECT:
-                    scarlett_button = Button("Miss Scarlett", 1503, 365, 60)
-                    if scarlett_button.check_click():
-                        Game.ACCUSE_SUSPECT = False
-                        Game.PLAYER_GUESS[0] = MISS_SCARLETT
-                    mustard_button = Button("Col. Mustard", 1503, 435, 60)
-                    if mustard_button.check_click():
-                        Game.ACCUSE_SUSPECT = False
-                        Game.PLAYER_GUESS[0] = COL_MUSTARD
-                    orchid_button = Button("Dr Orchid", 1503, 505, 60)
-                    if orchid_button.check_click():
-                        Game.ACCUSE_SUSPECT = False
-                        Game.PLAYER_GUESS[0] = DR_ORCHID
-                    green_button = Button("Rev. Green", 1503, 575, 60)
-                    if green_button.check_click():
-                        Game.ACCUSE_SUSPECT = False
-                        Game.PLAYER_GUESS[0] = REV_GREEN
-                    peacock_button = Button("Mrs Peacock", 1503, 645, 60)
-                    if peacock_button.check_click():
-                        Game.ACCUSE_SUSPECT = False
-                        Game.PLAYER_GUESS[0] = MRS_PEACOCK
-                    plum_button = Button("Prof. Plum", 1503, 715, 60)
-                    if plum_button.check_click():
-                        Game.ACCUSE_SUSPECT = False
-                        Game.PLAYER_GUESS[0] = PROF_PLUM
-                elif Game.GUESS_WEAPON:
-                    candlestick_button = Button("Candlestick", 1503, 365, 60)
-                    if candlestick_button.check_click():
-                        Game.GUESS_WEAPON = False
-                        Game.PLAYER_GUESS[1] = CANDLESTICK
-                    dagger_button = Button("Dagger", 1503, 435, 60)
-                    if dagger_button.check_click():
-                        Game.GUESS_WEAPON = False
-                        Game.PLAYER_GUESS[1] = DAGGER
-                    lead_pipe_button = Button("Lead Pipe", 1503, 505, 60)
-                    if lead_pipe_button.check_click():
-                        Game.GUESS_WEAPON = False
-                        Game.PLAYER_GUESS[1] = LEAD_PIPE
-                    revolver_button = Button("Revolver", 1503, 575, 60)
-                    if revolver_button.check_click():
-                        Game.GUESS_WEAPON = False
-                        Game.PLAYER_GUESS[1] = REVOLVER
-                    rope_button = Button("Rope", 1503, 645, 60)
-                    if rope_button.check_click():
-                        Game.GUESS_WEAPON = False
-                        Game.PLAYER_GUESS[1] = ROPE
-                    wrench_button = Button("Wrench", 1503, 715, 60)
-                    if wrench_button.check_click():
-                        Game.GUESS_WEAPON = False
-                        Game.PLAYER_GUESS[1] = WRENCH
-                else:
-                    if Game.PLAYER_GUESS[0] is None:
-                        suspect_button = Button("Accuse a Suspect", 1503, 400, 60)
-                        if suspect_button.check_click():
-                            Game.ACCUSE_SUSPECT = True
+            if isinstance(current_player.location, Location) and current_player.location.card is not None and current_player.location.displayName not in Game.SEEN_CARDS:
+                if not Game.CLUE_SHEET_OPEN:
+                    draw_text("You are in a location with a card:", SMALL_FONT, ORANGE, (1503, 480))
+                    draw_text(current_player.location.card.displayName, SMALL_FONT, ORANGE, (1503, 540))
+                    continue_button = Button("Continue", 1503, 600, 60)
+                    if continue_button.check_click():
+                        Game.SEEN_CARDS.append(current_player.location.displayName)
+            else:
+                draw_text("Select a Suspect and Weapon:", SMALL_FONT, ORANGE, (1503, 100))
+                if not Game.CLUE_SHEET_OPEN:
+                    if Game.ACCUSE_SUSPECT:
+                        scarlett_button = Button("Miss Scarlett", 1503, 365, 60)
+                        if scarlett_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = MISS_SCARLETT
+                        mustard_button = Button("Col. Mustard", 1503, 435, 60)
+                        if mustard_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = COL_MUSTARD
+                        orchid_button = Button("Dr Orchid", 1503, 505, 60)
+                        if orchid_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = DR_ORCHID
+                        green_button = Button("Rev. Green", 1503, 575, 60)
+                        if green_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = REV_GREEN
+                        peacock_button = Button("Mrs Peacock", 1503, 645, 60)
+                        if peacock_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = MRS_PEACOCK
+                        plum_button = Button("Prof. Plum", 1503, 715, 60)
+                        if plum_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = PROF_PLUM
+                    elif Game.GUESS_WEAPON:
+                        candlestick_button = Button("Candlestick", 1503, 365, 60)
+                        if candlestick_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = CANDLESTICK
+                        dagger_button = Button("Dagger", 1503, 435, 60)
+                        if dagger_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = DAGGER
+                        lead_pipe_button = Button("Lead Pipe", 1503, 505, 60)
+                        if lead_pipe_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = LEAD_PIPE
+                        revolver_button = Button("Revolver", 1503, 575, 60)
+                        if revolver_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = REVOLVER
+                        rope_button = Button("Rope", 1503, 645, 60)
+                        if rope_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = ROPE
+                        wrench_button = Button("Wrench", 1503, 715, 60)
+                        if wrench_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = WRENCH
                     else:
-                        draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 400))
-                    if Game.PLAYER_GUESS[1] is None:
-                        weapon_button = Button("Guess a Weapon", 1503, 540, 60)
-                        if weapon_button.check_click():
-                            Game.GUESS_WEAPON = True
-                    else:
-                        draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 540))
-                    draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 680))
-                    if Game.PLAYER_GUESS[0] is not None and Game.PLAYER_GUESS[1] is not None:
-                        continue_button = Button("Continue", 1503, 740, 60)
-                        if continue_button.check_click():
-                            selected_player = Game.CLIENT_NUMBER
-                            iterations = 0
-                            to_continue = True
-                            while True:
-                                if iterations > 0 and selected_player == Game.CLIENT_NUMBER:
-                                    break
-                                if selected_player == Game.CLIENT_NUMBER:
+                        if Game.PLAYER_GUESS[0] is None:
+                            suspect_button = Button("Accuse a Suspect", 1503, 400, 60)
+                            if suspect_button.check_click():
+                                Game.ACCUSE_SUSPECT = True
+                        else:
+                            draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 400))
+                        if Game.PLAYER_GUESS[1] is None:
+                            weapon_button = Button("Guess a Weapon", 1503, 540, 60)
+                            if weapon_button.check_click():
+                                Game.GUESS_WEAPON = True
+                        else:
+                            draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 540))
+                        draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 680))
+                        if Game.PLAYER_GUESS[0] is not None and Game.PLAYER_GUESS[1] is not None:
+                            continue_button = Button("Continue", 1503, 740, 60)
+                            if continue_button.check_click():
+                                selected_player = Game.CLIENT_NUMBER
+                                iterations = 0
+                                to_continue = True
+                                while True:
+                                    if iterations > 0 and selected_player == Game.CLIENT_NUMBER:
+                                        break
+                                    if selected_player == Game.CLIENT_NUMBER:
+                                        if selected_player == Game.PLAYER_COUNT - 1:
+                                            selected_player = 0
+                                        else:
+                                            selected_player += 1
+                                        iterations += 1
+                                        continue
+                                    for card in Game.PLAYERS[selected_player].cards:
+                                        if card.displayName == Game.PLAYER_GUESS[0].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName:
+                                            to_continue = False
+                                            break
+                                    if not to_continue:
+                                        break
                                     if selected_player == Game.PLAYER_COUNT - 1:
                                         selected_player = 0
                                     else:
                                         selected_player += 1
                                     iterations += 1
-                                    continue
-                                for card in Game.PLAYERS[selected_player].cards:
-                                    if card.displayName == Game.PLAYER_GUESS[0].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName:
-                                        to_continue = False
-                                        break
-                                if not to_continue:
-                                    break
-                                if selected_player == Game.PLAYER_COUNT - 1:
-                                    selected_player = 0
+                                if selected_player == Game.CLIENT_NUMBER:
+                                    Game.PLAYER_SHOWING = None
                                 else:
-                                    selected_player += 1
-                                iterations += 1
-                            if selected_player == Game.CLIENT_NUMBER:
-                                Game.PLAYER_SHOWING = None
-                            else:
-                                Game.PLAYER_SHOWING = Game.PLAYERS[selected_player]
-                            Game.TURN_STAGE = TurnStage.SHOW_CARD
-                            Game.NETWORK.send(("CardShowing", Game.TURN_STAGE, Game.PLAYER_GUESS, Game.PLAYER_SHOWING))
+                                    Game.PLAYER_SHOWING = Game.PLAYERS[selected_player]
+                                Game.TURN_STAGE = TurnStage.SHOW_CARD
+                                Game.NETWORK.send(("CardShowing", Game.TURN_STAGE, Game.PLAYER_GUESS, Game.PLAYER_SHOWING))
         elif Game.TURN_STAGE == TurnStage.SHOW_CARD:
             if not Game.CLUE_SHEET_OPEN:
                 if Game.SHOWN_CARD is not None:
@@ -478,7 +504,7 @@ def draw_window():  # Game Logic and Display
                         draw_text(Game.PLAYER_SHOWING.playerName + " has to show a card!", SMALL_FONT, ORANGE, (1503, 750))
                     else:
                         draw_text("Nobody else has the cards accused!", SMALL_FONT, ORANGE, (1503, 750))
-                        continue_button = Button("Continue", 1503, 780, 60)
+                        continue_button = Button("Continue", 1503, 810, 60)
                         if continue_button.check_click():
                             Game.NETWORK.send("TurnClick")
                             Game.SHOWN_CARD = "Wait"
@@ -493,6 +519,164 @@ def draw_window():  # Game Logic and Display
                     else:
                         Game.CURRENT_PLAYER += 1
                     Game.NETWORK.send("EndTurn")
+                if not current_player.playerDied:
+                    final_button = Button("Final Accusation", 1503, 670, 60)
+                    if final_button.check_click():
+                        Game.TURN_STAGE = TurnStage.FINAL_ACCUSATION
+                        Game.NETWORK.send("FinalAccusation")
+        elif Game.TURN_STAGE == TurnStage.FINAL_ACCUSATION:
+            if Game.WINNER == "Nobody":
+                draw_text("Sorry, you got the accusation wrong!", SMALL_FONT, ORANGE, (1503, 100))
+                continue_button = Button("Continue", 1503, 600, 60)
+                if continue_button.check_click():
+                    Game.TURN_STAGE = TurnStage.END_TURN
+                    Game.WINNER = None
+            else:
+                draw_text("You are making a Final Accusation!", SMALL_FONT, ORANGE, (1503, 100))
+                if not Game.CLUE_SHEET_OPEN:
+                    if Game.ACCUSE_SUSPECT:
+                        scarlett_button = Button("Miss Scarlett", 1503, 365, 60)
+                        if scarlett_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = MISS_SCARLETT
+                        mustard_button = Button("Col. Mustard", 1503, 435, 60)
+                        if mustard_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = COL_MUSTARD
+                        orchid_button = Button("Dr Orchid", 1503, 505, 60)
+                        if orchid_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = DR_ORCHID
+                        green_button = Button("Rev. Green", 1503, 575, 60)
+                        if green_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = REV_GREEN
+                        peacock_button = Button("Mrs Peacock", 1503, 645, 60)
+                        if peacock_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = MRS_PEACOCK
+                        plum_button = Button("Prof. Plum", 1503, 715, 60)
+                        if plum_button.check_click():
+                            Game.ACCUSE_SUSPECT = False
+                            Game.PLAYER_GUESS[0] = PROF_PLUM
+                    elif Game.GUESS_WEAPON:
+                        candlestick_button = Button("Candlestick", 1503, 365, 60)
+                        if candlestick_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = CANDLESTICK
+                        dagger_button = Button("Dagger", 1503, 435, 60)
+                        if dagger_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = DAGGER
+                        lead_pipe_button = Button("Lead Pipe", 1503, 505, 60)
+                        if lead_pipe_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = LEAD_PIPE
+                        revolver_button = Button("Revolver", 1503, 575, 60)
+                        if revolver_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = REVOLVER
+                        rope_button = Button("Rope", 1503, 645, 60)
+                        if rope_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = ROPE
+                        wrench_button = Button("Wrench", 1503, 715, 60)
+                        if wrench_button.check_click():
+                            Game.GUESS_WEAPON = False
+                            Game.PLAYER_GUESS[1] = WRENCH
+                    elif Game.GUESS_LOCATION:
+                        ballroom_button = Button("Ballroom", 1503, 260, 60)
+                        if ballroom_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = BALLROOM_CARD
+                        billiard_button = Button("Billiard Room", 1503, 330, 60)
+                        if billiard_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = BILLIARD_ROOM_CARD
+                        conservatory_button = Button("Conservatory", 1503, 400, 60)
+                        if conservatory_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = CONSERVATORY_CARD
+                        dining_button = Button("Dining Room", 1503, 470, 60)
+                        if dining_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = DINING_ROOM_CARD
+                        hall_button = Button("Hall", 1503, 540, 60)
+                        if hall_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = HALL_CARD
+                        kitchen_button = Button("Kitchen", 1503, 610, 60)
+                        if kitchen_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = KITCHEN_CARD
+                        library_button = Button("Library", 1503, 680, 60)
+                        if library_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = LIBRARY_CARD
+                        lounge_button = Button("Lounge", 1503, 750, 60)
+                        if lounge_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = LOUNGE_CARD
+                        study_button = Button("Study", 1503, 820, 60)
+                        if study_button.check_click():
+                            Game.GUESS_LOCATION = False
+                            Game.PLAYER_GUESS[2] = STUDY_CARD
+                    else:
+                        if Game.PLAYER_GUESS[0] is None:
+                            suspect_button = Button("Accuse a Suspect", 1503, 400, 60)
+                            if suspect_button.check_click():
+                                Game.ACCUSE_SUSPECT = True
+                        else:
+                            draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 400))
+                        if Game.PLAYER_GUESS[1] is None:
+                            weapon_button = Button("Guess a Weapon", 1503, 540, 60)
+                            if weapon_button.check_click():
+                                Game.GUESS_WEAPON = True
+                        else:
+                            draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 540))
+                        if Game.PLAYER_GUESS[2] is None:
+                            location_button = Button("Guess the Location", 1503, 680, 60)
+                            if location_button.check_click():
+                                Game.GUESS_LOCATION = True
+                        else:
+                            draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 680))
+                        back_button = Button("Back", 1503, 750, 60)
+                        if back_button.check_click():
+                            Game.TURN_STAGE = TurnStage.END_TURN
+                            Game.PLAYER_GUESS[0] = None
+                            Game.PLAYER_GUESS[1] = None
+                            Game.PLAYER_GUESS[2] = None
+                            Game.NETWORK.send(("Turn", Game.TURN_STAGE))
+                        if Game.PLAYER_GUESS[0] is not None and Game.PLAYER_GUESS[1] is not None and Game.PLAYER_GUESS[2] is not None:
+                            continue_button = Button("Make Accusation", 1503, 820, 60)
+                            if continue_button.check_click():
+                                has_won = Game.NETWORK.send(("Final", Game.PLAYER_GUESS))
+                                if has_won:
+                                    Game.WINNER = Game.PLAYERS[Game.CLIENT_NUMBER]
+                                    Game.TURN_STAGE = TurnStage.GAME_OVER
+                                else:
+                                    Game.WINNER = "Nobody"
+                                    current_player.playerDied = True
+                                    Game.NETWORK.send(("JustPlayer", current_player))
+                                    players_died = 0
+                                    for player in Game.PLAYERS:
+                                        if player.playerDied:
+                                            players_died += 1
+                                    if players_died == Game.PLAYER_COUNT:
+                                        Game.TURN_STAGE = TurnStage.GAME_OVER
+        elif Game.TURN_STAGE == TurnStage.GAME_OVER:
+            draw_text("The Game is now Over!", SMALL_FONT, ORANGE, (1503, 100))
+            if Game.WINNER == "Nobody":
+                draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+            else:
+                draw_text(Game.WINNER.displayName + " has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+        elif Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
+            draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
+            if Game.REVEALING_CARD[0] is not None:
+                if Game.REVEALING_CARD[1] is None:
+                    draw_text("Nodody has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+                else:
+                    draw_text(Game.REVEALING_CARD[1].playerName + " has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
         temp_button = Button("Quit", 1200, 540, 60)
         if temp_button.check_click():
             Game.NETWORK.send("quit")
@@ -557,6 +741,15 @@ def check_updates():
         if "clue" in response:
             if Game.DISPLAYED_CLUE_CARD is None:
                 Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
+                if Game.DISPLAYED_CLUE_CARD.card is not None:
+                    Game.REVEALING_CARD[0] = Game.DISPLAYED_CLUE_CARD.card
+                    for player in Game.PLAYERS:
+                        for card in player.cards:
+                            if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                Game.REVEALING_CARD[1] = player
+                                break
+                        if Game.REVEALING_CARD[1] is not None:
+                            break
             else:
                 Game.DISPLAYED_CLUE_CARD = None
         if "card_show" in response:
@@ -565,11 +758,30 @@ def check_updates():
         if "show_card" in response:
             Game.SHOWN_CARD = response["show_card"]
         if "end_turn" in response:
+            if Game.WINNER is not None:
+                Game.WINNER = None
             Game.TURN_STAGE = TurnStage.START
             if Game.CURRENT_PLAYER == Game.PLAYER_COUNT - 1:
                 Game.CURRENT_PLAYER = 0
             else:
                 Game.CURRENT_PLAYER += 1
+        if "final" in response:
+            Game.TURN_STAGE = TurnStage.FINAL_ACCUSATION
+        if "accuse" in response:
+            Game.PLAYER_GUESS[0] = None
+            Game.PLAYER_GUESS[1] = None
+            Game.PLAYER_GUESS[2] = None
+            if response["accuse"]:
+                Game.WINNER = Game.PLAYERS[Game.CURRENT_PLAYER]
+                Game.TURN_STAGE = TurnStage.GAME_OVER
+            else:
+                Game.WINNER = "Nobody"
+                players_died = 0
+                for player in Game.PLAYERS:
+                    if player.playerDied:
+                        players_died += 1
+                if players_died == Game.PLAYER_COUNT:
+                    Game.TURN_STAGE = TurnStage.GAME_OVER
 
 
 def draw_clue_card(card, location):
@@ -597,6 +809,9 @@ def check_click_location(location):
 
 def check_click_square(square):
     if Game.LEFT_MOUSE_RELEASED and square.currentRect.collidepoint(pygame.mouse.get_pos()):
+        for player in Game.PLAYERS:
+            if player.location == square:
+                return None
         finder = AStarFinder()
         if isinstance(Game.PLAYERS[Game.CLIENT_NUMBER].location, Square):
             path = finder.find_path(GRID.node(Game.PLAYERS[Game.CLIENT_NUMBER].location.square[0], Game.PLAYERS[Game.CLIENT_NUMBER].location.square[1]),
@@ -644,10 +859,10 @@ def draw_text_input(location = (960, 330), max_length = 300):  # Creates Text In
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    CONSERVATORY.passage = LOUNGE
-    LOUNGE.passage = CONSERVATORY
-    STUDY.passage = KITCHEN
-    KITCHEN.passage = STUDY
+    CONSERVATORY.passage.append(LOUNGE)
+    LOUNGE.passage.append(CONSERVATORY)
+    STUDY.passage.append(KITCHEN)
+    KITCHEN.passage.append(STUDY)
     while True:
         clock.tick(FPS)
         Game.LEFT_MOUSE_RELEASED = False

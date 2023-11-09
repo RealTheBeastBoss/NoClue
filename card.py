@@ -11,7 +11,8 @@ class GameCard:
         self.cardType = card_type
 
 class ClueCard:
-    def __init__(self, title, action, subtitle = None):
+    def __init__(self, title, action, subtitle = None, card = None):
         self.title = title
         self.action = action
         self.subtitle = subtitle
+        self.card = card

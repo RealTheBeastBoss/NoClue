@@ -25,4 +25,5 @@ class Player:
         self.playerName = PLAYER_TO_NAME[num]
         self.location = PLAYER_TO_START[num]
         self.playerColour = PLAYER_TO_COLOUR[num]
+        self.playerDied = False
         self.cards = []

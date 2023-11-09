@@ -8,7 +8,7 @@ class Location:
         self.enterSquares = squares
         self.player_to_point = stands
         self.center = center
-        self.passage = None
+        self.passage = []
         self.corners = corners[:-1]
         self.edges = []
         for x in range(len(corners) - 1):

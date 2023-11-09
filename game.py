@@ -102,6 +102,8 @@ class TurnStage(Enum):
     MAKE_GUESS = 6
     SHOW_CARD = 7
     END_TURN = 8
+    FINAL_ACCUSATION = 9
+    GAME_OVER = 10
 
 # region
 # Game Cards:
@@ -139,7 +141,7 @@ SHOW_CANDLESTICK = ClueCard("What Was That?", get_wrapped_text("Anyone holding t
 SHOW_GREEN = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Rev. Green card must reveal it!", TINY_FONT, 280), get_wrapped_text("How odd, Reverend Green is sitting alone and in silence.", TINY_FONT, 280))
 SHOW_KITCHEN = ClueCard("Where?", get_wrapped_text("Anyone holding the Kitchen card must reveal it!", TINY_FONT, 280), get_wrapped_text("The oven timer goes off!", TINY_FONT, 280))
 SHOW_ROPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Rope card must reveal it!", TINY_FONT, 280), get_wrapped_text("Someone's alibi is beginning to fray at the ends.", TINY_FONT, 280))
-SECRET_PASSAGE = ClueCard("Creeeeak!", get_wrapped_text("Make any room, that room connects to all secret passages.", TINY_FONT, 280), get_wrapped_text("Find a secret passage.", TINY_FONT, 280))
+SECRET_PASSAGE = ClueCard("Creeeeak!", get_wrapped_text("Make any room connect to all secret passages.", TINY_FONT, 280), get_wrapped_text("Find a secret passage.", TINY_FONT, 280))
 SHOW_LEFT = ClueCard("You Don't Say!", get_wrapped_text("All players show one card to the next player.", TINY_FONT, 280), get_wrapped_text("There's always time for a good gossip.", TINY_FONT, 280))
 SHOW_LEAD_PIPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Lead Pipe card must reveal it!", TINY_FONT, 280), get_wrapped_text("It's become a real weight in your pocket.", TINY_FONT, 280))
 SHOW_DAGGER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Dagger card must reveal it!", TINY_FONT, 280), get_wrapped_text("We need to sharpen our investigating skills.", TINY_FONT, 280))
@@ -295,7 +297,6 @@ class Game:
     CLUE_SHEET = None
     CLUE_SHEET_OPEN = False
     FAILED_SELECTION = False
-    HAS_DIED = False
     SELECTED_SQUARE = None
     SELECTED_LOCATION = None
     SQUARE_FAIL_DISTANCE = 0
@@ -303,9 +304,13 @@ class Game:
     DISPLAYED_CLUE_CARD = None
     ACCUSE_SUSPECT = False
     GUESS_WEAPON = False
+    GUESS_LOCATION = False
     PLAYER_GUESS = [None, None, None]
     PLAYER_SHOWING = None
     SHOWN_CARD = None
+    WINNER = None
+    REVEALING_CARD = [None, None]
+    SEEN_CARDS = []
     CARD_NAMES = []
     LOCATIONS = [BALLROOM, CONSERVATORY, BILLIARD_ROOM, LIBRARY, STUDY, HALL, LOUNGE, DINING_ROOM, KITCHEN]
     CLUE_CARD_DECK = [SHOW_SCARLETT, SHOW_MUSTARD, SHOW_ORCHID, SHOW_GREEN, SHOW_PEACOCK, SHOW_PLUM, SHOW_CANDLESTICK, SHOW_DAGGER, SHOW_LEAD_PIPE, SHOW_REVOLVER, SHOW_ROPE, SHOW_WRENCH, SHOW_BALLROOM, SHOW_BILLIARD,
