@@ -132,35 +132,35 @@ GAME_CARDS = [MISS_SCARLETT, COL_MUSTARD, DR_ORCHID, REV_GREEN, MRS_PEACOCK, PRO
               HALL_CARD, KITCHEN_CARD, LIBRARY_CARD, LOUNGE_CARD, STUDY_CARD]
 
 # Clue Cards:
-SHOW_DINING = ClueCard("Where?", get_wrapped_text("Anyone holding the Dining Room card must reveal it!", TINY_FONT, 280), get_wrapped_text("Dinner is served.", TINY_FONT, 280))
-SHOW_MUSTARD = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Col. Mustard card must reveal it!", TINY_FONT, 280), get_wrapped_text("That's curious, Colonel Mustard is limping.", TINY_FONT, 280))
+SHOW_DINING = ClueCard("Where?", get_wrapped_text("Anyone holding the Dining Room card must reveal it!", TINY_FONT, 280), get_wrapped_text("Dinner is served.", TINY_FONT, 280), DINING_ROOM_CARD)
+SHOW_MUSTARD = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Col. Mustard card must reveal it!", TINY_FONT, 280), get_wrapped_text("That's curious, Colonel Mustard is limping.", TINY_FONT, 280), COL_MUSTARD)
 CHOOSE_PLAYER_REVEAL = ClueCard("Under Pressure!", get_wrapped_text("Choose the guiltiest-looking player to reveal one card from their hand.", TINY_FONT, 280))
-SHOW_HALL = ClueCard("Where?", get_wrapped_text("Anyone holding the Hall card must reveal it!", TINY_FONT, 280), get_wrapped_text("There's a heavy knock at the front door.", TINY_FONT, 280))
+SHOW_HALL = ClueCard("Where?", get_wrapped_text("Anyone holding the Hall card must reveal it!", TINY_FONT, 280), get_wrapped_text("There's a heavy knock at the front door.", TINY_FONT, 280), HALL_CARD)
 CHOOSE_WEAPON_REVEAL = ClueCard("Look What I Found!", get_wrapped_text("Name one weapon you want to be revealed.", TINY_FONT, 280), get_wrapped_text("It couldn't possibly be...", TINY_FONT, 280))
-SHOW_CANDLESTICK = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Candlestick card must reveal it!", TINY_FONT, 280), get_wrapped_text("Oh no, the electricity has gone again.", TINY_FONT, 280))
-SHOW_GREEN = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Rev. Green card must reveal it!", TINY_FONT, 280), get_wrapped_text("How odd, Reverend Green is sitting alone and in silence.", TINY_FONT, 280))
-SHOW_KITCHEN = ClueCard("Where?", get_wrapped_text("Anyone holding the Kitchen card must reveal it!", TINY_FONT, 280), get_wrapped_text("The oven timer goes off!", TINY_FONT, 280))
-SHOW_ROPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Rope card must reveal it!", TINY_FONT, 280), get_wrapped_text("Someone's alibi is beginning to fray at the ends.", TINY_FONT, 280))
+SHOW_CANDLESTICK = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Candlestick card must reveal it!", TINY_FONT, 280), get_wrapped_text("Oh no, the electricity has gone again.", TINY_FONT, 280), CANDLESTICK)
+SHOW_GREEN = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Rev. Green card must reveal it!", TINY_FONT, 280), get_wrapped_text("How odd, Reverend Green is sitting alone and in silence.", TINY_FONT, 280), REV_GREEN)
+SHOW_KITCHEN = ClueCard("Where?", get_wrapped_text("Anyone holding the Kitchen card must reveal it!", TINY_FONT, 280), get_wrapped_text("The oven timer goes off!", TINY_FONT, 280), KITCHEN_CARD)
+SHOW_ROPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Rope card must reveal it!", TINY_FONT, 280), get_wrapped_text("Someone's alibi is beginning to fray at the ends.", TINY_FONT, 280), ROPE)
 SECRET_PASSAGE = ClueCard("Creeeeak!", get_wrapped_text("Make any room connect to all secret passages.", TINY_FONT, 280), get_wrapped_text("Find a secret passage.", TINY_FONT, 280))
 SHOW_LEFT = ClueCard("You Don't Say!", get_wrapped_text("All players show one card to the next player.", TINY_FONT, 280), get_wrapped_text("There's always time for a good gossip.", TINY_FONT, 280))
-SHOW_LEAD_PIPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Lead Pipe card must reveal it!", TINY_FONT, 280), get_wrapped_text("It's become a real weight in your pocket.", TINY_FONT, 280))
-SHOW_DAGGER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Dagger card must reveal it!", TINY_FONT, 280), get_wrapped_text("We need to sharpen our investigating skills.", TINY_FONT, 280))
+SHOW_LEAD_PIPE = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Lead Pipe card must reveal it!", TINY_FONT, 280), get_wrapped_text("It's become a real weight in your pocket.", TINY_FONT, 280), LEAD_PIPE)
+SHOW_DAGGER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Dagger card must reveal it!", TINY_FONT, 280), get_wrapped_text("We need to sharpen our investigating skills.", TINY_FONT, 280), DAGGER)
 CHOOSE_SUSPECT_REVEAL = ClueCard("Airtight Alibi!", get_wrapped_text("Name one suspect you want revealed.", TINY_FONT, 280), get_wrapped_text("It couldn't possibly be...", TINY_FONT, 280))
-SHOW_BALLROOM = ClueCard("Where?", get_wrapped_text("Anyone holding the Ballroom card must reveal it!", TINY_FONT, 280), get_wrapped_text("A waltz starts echoing around Tudor Mansion.", TINY_FONT, 280))
-SHOW_LOUNGE = ClueCard("Where?", get_wrapped_text("Anyone holding the Lounge card must reveal it!", TINY_FONT, 280), get_wrapped_text("This is no time to relax!", TINY_FONT, 280))
-SHOW_WRENCH = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Wrench card must reveal it!", TINY_FONT, 280), get_wrapped_text("We will get to the truth!", TINY_FONT, 280))
-SHOW_SCARLETT = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Miss Scarlett card must reveal it!", TINY_FONT, 280), get_wrapped_text("Hold on, that's a scratch on Miss Scarlett's cheek.", TINY_FONT, 280))
-SHOW_CONSERVATORY = ClueCard("Where?", get_wrapped_text("Anyone holding the Conservatory card must reveal it!", TINY_FONT, 280), get_wrapped_text("These plants really do need some water.", TINY_FONT, 280))
+SHOW_BALLROOM = ClueCard("Where?", get_wrapped_text("Anyone holding the Ballroom card must reveal it!", TINY_FONT, 280), get_wrapped_text("A waltz starts echoing around Tudor Mansion.", TINY_FONT, 280), BALLROOM_CARD)
+SHOW_LOUNGE = ClueCard("Where?", get_wrapped_text("Anyone holding the Lounge card must reveal it!", TINY_FONT, 280), get_wrapped_text("This is no time to relax!", TINY_FONT, 280), LOUNGE_CARD)
+SHOW_WRENCH = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Wrench card must reveal it!", TINY_FONT, 280), get_wrapped_text("We will get to the truth!", TINY_FONT, 280), WRENCH)
+SHOW_SCARLETT = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Miss Scarlett card must reveal it!", TINY_FONT, 280), get_wrapped_text("Hold on, that's a scratch on Miss Scarlett's cheek.", TINY_FONT, 280), MISS_SCARLETT)
+SHOW_CONSERVATORY = ClueCard("Where?", get_wrapped_text("Anyone holding the Conservatory card must reveal it!", TINY_FONT, 280), get_wrapped_text("These plants really do need some water.", TINY_FONT, 280), CONSERVATORY_CARD)
 ROOM_CHOICE = ClueCard("Screeeeam!", get_wrapped_text("All players rush to the room of their choice.", TINY_FONT, 280))
-SHOW_BILLIARD = ClueCard("Where?", get_wrapped_text("Anyone holding the Billiard Room card must reveal it!", TINY_FONT, 280), get_wrapped_text("That's your cue!", TINY_FONT, 280))
-SHOW_LIBRARY = ClueCard("Where?", get_wrapped_text("Anyone holding the Library card must reveal it!", TINY_FONT, 280), get_wrapped_text("There's only one place that book could have come from.", TINY_FONT, 280))
+SHOW_BILLIARD = ClueCard("Where?", get_wrapped_text("Anyone holding the Billiard Room card must reveal it!", TINY_FONT, 280), get_wrapped_text("That's your cue!", TINY_FONT, 280), BILLIARD_ROOM_CARD)
+SHOW_LIBRARY = ClueCard("Where?", get_wrapped_text("Anyone holding the Library card must reveal it!", TINY_FONT, 280), get_wrapped_text("There's only one place that book could have come from.", TINY_FONT, 280), LIBRARY_CARD)
 ALL_REVEAL = ClueCard("Dun-Dun-Duuun!", get_wrapped_text("All players reveal one card from their hand.", TINY_FONT, 280))
-SHOW_STUDY = ClueCard("Where?", get_wrapped_text("Anyone holding the Study card must reveal it!", TINY_FONT, 280), get_wrapped_text("The telephone jangles everybody's nerves.", TINY_FONT, 280))
-SHOW_REVOLVER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Revolver card must reveal it!", TINY_FONT, 280), get_wrapped_text("We must trigger a reaction.", TINY_FONT, 280))
+SHOW_STUDY = ClueCard("Where?", get_wrapped_text("Anyone holding the Study card must reveal it!", TINY_FONT, 280), get_wrapped_text("The telephone jangles everybody's nerves.", TINY_FONT, 280), STUDY_CARD)
+SHOW_REVOLVER = ClueCard("What Was That?", get_wrapped_text("Anyone holding the Revolver card must reveal it!", TINY_FONT, 280), get_wrapped_text("We must trigger a reaction.", TINY_FONT, 280), REVOLVER)
 CHOOSE_LOCATION_REVEAL = ClueCard("Wink Wink!", get_wrapped_text("Name one location you want revealed.", TINY_FONT, 280), get_wrapped_text("It couldn't possibly be...", TINY_FONT, 280))
-SHOW_PEACOCK = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Mrs Peacock card must reveal it!", TINY_FONT, 280), get_wrapped_text("Wait a minute, Mrs Peacock was last seen with Black.", TINY_FONT, 280))
-SHOW_ORCHID = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Doctor Orchid card must reveal it!", TINY_FONT, 280), get_wrapped_text("Hmmm, Doctor Orchid has a bandage on her hand.", TINY_FONT, 280))
-SHOW_PLUM = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Prof. Plum card must reveal it!", TINY_FONT, 280), get_wrapped_text("Look, the arm of Professor Plum's glasses has been hastily fixed with tape.", TINY_FONT, 280))
+SHOW_PEACOCK = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Mrs Peacock card must reveal it!", TINY_FONT, 280), get_wrapped_text("Wait a minute, Mrs Peacock was last seen with Black.", TINY_FONT, 280), MRS_PEACOCK)
+SHOW_ORCHID = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Doctor Orchid card must reveal it!", TINY_FONT, 280), get_wrapped_text("Hmmm, Doctor Orchid has a bandage on her hand.", TINY_FONT, 280), DR_ORCHID)
+SHOW_PLUM = ClueCard("What Happened?", get_wrapped_text("Anyone holding the Prof. Plum card must reveal it!", TINY_FONT, 280), get_wrapped_text("Look, the arm of Professor Plum's glasses has been hastily fixed with tape.", TINY_FONT, 280), PROF_PLUM)
 
 # Squares:
 ORCHID_START = Square(9, 0)
@@ -312,10 +312,9 @@ class Game:
     REVEALING_CARD = [None, None]
     SEEN_CARDS = []
     CARD_NAMES = []
+    PLAYER_CHOOSING = None
     LOCATIONS = [BALLROOM, CONSERVATORY, BILLIARD_ROOM, LIBRARY, STUDY, HALL, LOUNGE, DINING_ROOM, KITCHEN]
-    CLUE_CARD_DECK = [SHOW_SCARLETT, SHOW_MUSTARD, SHOW_ORCHID, SHOW_GREEN, SHOW_PEACOCK, SHOW_PLUM, SHOW_CANDLESTICK, SHOW_DAGGER, SHOW_LEAD_PIPE, SHOW_REVOLVER, SHOW_ROPE, SHOW_WRENCH, SHOW_BALLROOM, SHOW_BILLIARD,
-                      SHOW_CONSERVATORY, SHOW_DINING, SHOW_HALL, SHOW_KITCHEN, SHOW_LIBRARY, SHOW_LOUNGE, SHOW_STUDY, CHOOSE_PLAYER_REVEAL, CHOOSE_SUSPECT_REVEAL, CHOOSE_WEAPON_REVEAL, CHOOSE_LOCATION_REVEAL,
-                      SECRET_PASSAGE, ROOM_CHOICE, ALL_REVEAL, SHOW_LEFT]
+    CLUE_CARD_DECK = [CHOOSE_WEAPON_REVEAL]
     # Events:
     BUTTONS_ENABLED = True
     LEFT_MOUSE_RELEASED = False

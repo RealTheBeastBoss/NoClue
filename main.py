@@ -176,10 +176,39 @@ def draw_window():  # Game Logic and Display
         if current_player.playerIndex != Game.CLIENT_NUMBER:
             draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, ORANGE, (1503, 100))
             if Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
-                draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
+                draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 140))
                 if not Game.CLUE_SHEET_OPEN:
-                    if Game.REVEALING_CARD[0] is not None:
-
+                    if Game.REVEALING_CARD[0] == "Wait":  # Waiting for Continue
+                        draw_text("Waiting for others to continue", SMALL_FONT, ORANGE, (1503, 540))
+                    elif Game.PLAYER_CHOOSING is not None:  # Waiting for a Player to Choose
+                        if Game.PLAYER_CHOOSING.playerIndex == Game.CLIENT_NUMBER:
+                            draw_text("You need to choose a card to reveal!", SMALL_FONT, ORANGE, (1503, 240))
+                            for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER].cards)):
+                                card = Game.PLAYERS[Game.CLIENT_NUMBER].cards[x]
+                                button = Button(card.displayName, 1503, 300 + (x * 70), 60)
+                                if button.check_click():
+                                    Game.REVEALING_CARD[0] = card
+                                    Game.REVEALING_CARD[1] = Game.PLAYER_CHOOSING
+                                    Game.PLAYER_CHOOSING = None
+                                    Game.PLAYERS[Game.CLIENT_NUMBER].cards.remove(card)
+                                    Game.NETWORK.send(("ChosenCard", card))
+                                    break
+                        else:
+                            draw_text("Waiting for " + Game.PLAYER_CHOOSING.playerName + " to choose a card", SMALL_FONT, ORANGE, (1503, 540))
+                    elif Game.DISPLAYED_CLUE_CARD is not None:
+                        if Game.REVEALING_CARD[0] is not None:  # Reveal Card
+                            if Game.REVEALING_CARD[1] is None:
+                                draw_text("Nobody has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+                            else:
+                                draw_text(Game.REVEALING_CARD[1].playerName + " has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+                            continue_button = Button("Continue", 1503, 610, 60)
+                            if continue_button.check_click():
+                                Game.NETWORK.send("TurnClick")
+                                Game.REVEALING_CARD[0] = "Wait"
+                        elif Game.DISPLAYED_CLUE_CARD.title == "Creeeeak!":
+                            draw_text("Waiting for " + current_player.playerName + " to Choose a Location", SMALL_FONT, ORANGE, (1503, 540))
+                        elif Game.DISPLAYED_CLUE_CARD.title == "Look What I Found!":
+                            draw_text("Waiting for " + current_player.playerName + " to Choose a Weapon", SMALL_FONT, ORANGE, (1503, 540))
             elif Game.TURN_STAGE == TurnStage.GAME_OVER:
                 if Game.WINNER == "Nobody":
                     draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
@@ -309,6 +338,7 @@ def draw_window():  # Game Logic and Display
                     Game.SELECTED_SQUARE = result
                     Game.SQUARE_FAIL_DISTANCE = 0
                     Game.SELECTED_LOCATION = None
+                    break
                 else:
                     Game.SQUARE_FAIL_DISTANCE = result
                     Game.SELECTED_SQUARE = None
@@ -679,19 +709,79 @@ def draw_window():  # Game Logic and Display
         elif Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
             draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
             if not Game.CLUE_SHEET_OPEN:
-                if Game.REVEALING_CARD[0] is not None:
-                    if Game.REVEALING_CARD[1] is None:
-                        draw_text("Nobody has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
-                    else:
-                        draw_text(Game.REVEALING_CARD[1].playerName + " has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
-                    continue_button = Button("Continue", 1503, 610, 60)
-                    if continue_button.check_click():
-                        Game.NETWORK.send("TurnClick")
-                        Game.REVEALING_CARD[0] = "Wait"
-        temp_button = Button("Quit", 1200, 540, 60)
-        if temp_button.check_click():
-            Game.NETWORK.send("quit")
-            pygame.quit()
+                if Game.REVEALING_CARD[0] == "Wait":  # Waiting for Continue
+                    draw_text("Waiting for others to continue", SMALL_FONT, ORANGE, (1503, 540))
+                elif Game.PLAYER_CHOOSING is not None:  # Waiting for a Player to Choose
+                    draw_text("Waiting for " + Game.PLAYER_CHOOSING.playerName + " to choose a card", SMALL_FONT, ORANGE, (1503, 540))
+                elif Game.DISPLAYED_CLUE_CARD is not None:
+                    if Game.REVEALING_CARD[0] is not None:  # Reveal Card
+                        if Game.REVEALING_CARD[1] is None:
+                            draw_text("Nobody has the \"" + Game.REVEALING_CARD[0].displayName + "\" card", SMALL_FONT,
+                                      ORANGE, (1503, 540))
+                        else:
+                            draw_text(Game.REVEALING_CARD[1].playerName + " has the \"" + Game.REVEALING_CARD[
+                                0].displayName + "\" card", SMALL_FONT, ORANGE, (1503, 540))
+                        continue_button = Button("Continue", 1503, 610, 60)
+                        if continue_button.check_click():
+                            Game.NETWORK.send("TurnClick")
+                            Game.REVEALING_CARD[0] = "Wait"
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Creeeeak!":  # Choose a Location to Connect the Passages
+                        draw_text("Click a Location to Connect the Passages:", SMALL_FONT, ORANGE, (1503, 200))
+                        for location in Game.LOCATIONS:
+                            if check_click_location(location):
+                                Game.SELECTED_LOCATION = location
+                        if Game.SELECTED_LOCATION is not None:
+                            location_button = Button("Confirm " + Game.SELECTED_LOCATION.displayName, 1503, 540)
+                            if location_button.check_click():
+
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Under Pressure!":  # Choose Player to Reveal a Card
+                        draw_text("Choose a Player to Reveal a Card:", SMALL_FONT, ORANGE, (1503, 200))
+                        for x in range(len(Game.PLAYERS)):
+                            if Game.PLAYERS[x].playerIndex != Game.CLIENT_NUMBER:
+                                button = Button(Game.PLAYERS[x].playerName, 1503, 360 + (x * 70), 60)
+                                if button.check_click():
+                                    Game.PLAYER_CHOOSING = Game.PLAYERS[x]
+                                    Game.NETWORK.send(("PlayerChoosing", Game.PLAYER_CHOOSING))
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Look What I Found!":  # Choose a Weapon to Reveal
+                        draw_text("Choose a Weapon to be Revealed:", SMALL_FONT, ORANGE, (1503, 300))
+                        candlestick_button = Button("Candlestick", 1503, 365, 60)
+                        if candlestick_button.check_click():
+                            Game.REVEALING_CARD[0] = CANDLESTICK
+                            Game.NETWORK.send(("WeaponReveal", CANDLESTICK))
+                        dagger_button = Button("Dagger", 1503, 435, 60)
+                        if dagger_button.check_click():
+                            Game.REVEALING_CARD[0] = DAGGER
+                            Game.NETWORK.send(("WeaponReveal", DAGGER))
+                        lead_pipe_button = Button("Lead Pipe", 1503, 505, 60)
+                        if lead_pipe_button.check_click():
+                            Game.REVEALING_CARD[0] = LEAD_PIPE
+                            Game.NETWORK.send(("WeaponReveal", LEAD_PIPE))
+                        revolver_button = Button("Revolver", 1503, 575, 60)
+                        if revolver_button.check_click():
+                            Game.REVEALING_CARD[0] = REVOLVER
+                            Game.NETWORK.send(("WeaponReveal", REVOLVER))
+                        rope_button = Button("Rope", 1503, 645, 60)
+                        if rope_button.check_click():
+                            Game.REVEALING_CARD[0] = ROPE
+                            Game.NETWORK.send(("WeaponReveal", ROPE))
+                        wrench_button = Button("Wrench", 1503, 715, 60)
+                        if wrench_button.check_click():
+                            Game.REVEALING_CARD[0] = WRENCH
+                            Game.NETWORK.send(("WeaponReveal", WRENCH))
+                        if Game.REVEALING_CARD[0] is not None:
+                            for player in Game.PLAYERS:
+                                for card in player.cards:
+                                    if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                        Game.REVEALING_CARD[1] = player
+                                        player.cards.remove(card)
+                                        break
+                                if Game.REVEALING_CARD[1] is not None:
+                                    break
+        if Game.HAS_SERVER:
+            temp_button = Button("Quit", 1200, 1000, 60)
+            if temp_button.check_click():
+                Game.NETWORK.send("quit")
+                pygame.quit()
 
 
 def draw_game_board():
@@ -734,6 +824,11 @@ def check_updates():
         if data:
             Game.REVEALING_CARD[0] = None
             Game.REVEALING_CARD[1] = None
+            Game.DISPLAYED_CLUE_CARD = None
+            if Game.CLUE_TO_DRAW > 0:
+                Game.TURN_STAGE = TurnStage.DRAW_CLUE_CARD
+            else:
+                Game.TURN_STAGE = TurnStage.MOVEMENT
     response = Game.NETWORK.send("!")
     if response:
         print("From Server, Received: " + str(response))
@@ -799,6 +894,25 @@ def check_updates():
                         players_died += 1
                 if players_died == Game.PLAYER_COUNT:
                     Game.TURN_STAGE = TurnStage.GAME_OVER
+        if "player_choosing" in response:
+            Game.PLAYER_CHOOSING = response["player_choosing"]
+        if "chosen_card" in response:
+            Game.REVEALING_CARD[0] = response["chosen_card"]
+            Game.REVEALING_CARD[1] = Game.PLAYER_CHOOSING
+            for x in range(len(Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards)):
+                if Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards[x].displayName == Game.REVEALING_CARD[0].displayName:
+                    Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards.remove(Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards[x])
+            Game.PLAYER_CHOOSING = None
+        if "weapon_reveal" in response:
+            Game.REVEALING_CARD[0] = response["weapon_reveal"]
+            for player in Game.PLAYERS:
+                for card in player.cards:
+                    if card.displayName == Game.REVEALING_CARD[0].displayName:
+                        Game.REVEALING_CARD[1] = player
+                        player.cards.remove(card)
+                        break
+                if Game.REVEALING_CARD[1] is not None:
+                    break
 
 
 def draw_clue_card(card, location):
@@ -827,7 +941,7 @@ def check_click_location(location):
 def check_click_square(square):
     if Game.LEFT_MOUSE_RELEASED and square.currentRect.collidepoint(pygame.mouse.get_pos()):
         for player in Game.PLAYERS:
-            if player.location == square:
+            if isinstance(player.location, Square) and player.location.square == square.square:
                 return None
         finder = AStarFinder()
         if isinstance(Game.PLAYERS[Game.CLIENT_NUMBER].location, Square):

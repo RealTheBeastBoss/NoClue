@@ -34,8 +34,12 @@ class Server:
     finals_to_send = []
     final_succeeded = False
     accuse_to_send = []
-
-
+    player_choosing = None
+    player_choosing_to_send = []
+    chosen_card = None
+    chosen_card_to_send = []
+    weapon_revealed = None
+    weapon_reveals_to_send = []
 
 def threaded_client(conn, ip):
     while True:  # Send and Receive Data
@@ -82,6 +86,15 @@ def threaded_client(conn, ip):
                     if ip in Server.accuse_to_send:
                         data["accuse"] = Server.final_succeeded
                         Server.accuse_to_send.remove(ip)
+                    if ip in Server.player_choosing_to_send:
+                        data["player_choosing"] = Server.player_choosing
+                        Server.player_choosing_to_send.remove(ip)
+                    if ip in Server.chosen_card_to_send:
+                        data["chosen_card"] = Server.chosen_card
+                        Server.chosen_card_to_send.remove(ip)
+                    if ip in Server.weapon_reveals_to_send:
+                        data["weapon_reveal"] = Server.weapon_revealed
+                        Server.weapon_reveals_to_send.remove(ip)
                 elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
@@ -107,6 +120,26 @@ def threaded_client(conn, ip):
                 elif data == "TurnClick":
                     print("From " + str(ip[0]) + ", Received Turn Click")
                     Server.turn_stages_to_get.remove(ip)
+                    data = False
+                elif data[0] == "WeaponReveal":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.weapon_revealed = data[1]
+                    Server.weapon_reveals_to_send = Server.client_addresses.copy()
+                    Server.weapon_reveals_to_send.remove(ip)
+                    Server.turn_stages_to_get = Server.client_addresses.copy()
+                    data = False
+                elif data[0] == "ChosenCard":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.chosen_card = data[1]
+                    Server.chosen_card_to_send = Server.client_addresses.copy()
+                    Server.chosen_card_to_send.remove(ip)
+                    Server.turn_stages_to_get = Server.client_addresses.copy()
+                    data = False
+                elif data[0] == "PlayerChoosing":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.player_choosing = data[1]
+                    Server.player_choosing_to_send = Server.client_addresses.copy()
+                    Server.player_choosing_to_send.remove(ip)
                     data = False
                 elif data[0] == "Clue":
                     print("From " + str(ip[0]) + ", Received: " + str(data))
