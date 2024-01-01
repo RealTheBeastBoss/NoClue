@@ -40,6 +40,14 @@ class Server:
     chosen_card_to_send = []
     weapon_revealed = None
     weapon_reveals_to_send = []
+    passage_location = None
+    passages_to_send = []
+    temp_players = []
+    temp_players_to_send = []
+    temp_cards = []
+    temp_cards_to_send = []
+    temp_showings = []
+    temp_showings_to_send = []
 
 def threaded_client(conn, ip):
     while True:  # Send and Receive Data
@@ -95,6 +103,18 @@ def threaded_client(conn, ip):
                     if ip in Server.weapon_reveals_to_send:
                         data["weapon_reveal"] = Server.weapon_revealed
                         Server.weapon_reveals_to_send.remove(ip)
+                    if ip in Server.passages_to_send:
+                        data["passage_location"] = Server.passage_location
+                        Server.passages_to_send.remove(ip)
+                    if ip in Server.temp_players_to_send:
+                        data["players"] = Server.temp_players
+                        Server.temp_players_to_send.remove(ip)
+                    if ip in Server.temp_cards_to_send:
+                        data["cards"] = Server.temp_cards
+                        Server.temp_cards_to_send.remove(ip)
+                    if ip in Server.temp_showings_to_send:
+                        data["showings"] = Server.temp_showings
+                        Server.temp_showings_to_send.remove(ip)
                 elif data == "?":
                     if Server.added_players == Server.player_count:
                         data = (Server.players, Server.clue_cards, Server.clue_cards_active)
@@ -126,6 +146,13 @@ def threaded_client(conn, ip):
                     Server.weapon_revealed = data[1]
                     Server.weapon_reveals_to_send = Server.client_addresses.copy()
                     Server.weapon_reveals_to_send.remove(ip)
+                    Server.turn_stages_to_get = Server.client_addresses.copy()
+                    data = False
+                elif data[0] == "PassageLocation":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.passage_location = data[1]
+                    Server.passages_to_send = Server.client_addresses.copy()
+                    Server.passages_to_send.remove(ip)
                     Server.turn_stages_to_get = Server.client_addresses.copy()
                     data = False
                 elif data[0] == "ChosenCard":
@@ -180,6 +207,26 @@ def threaded_client(conn, ip):
                     Server.card_showings_to_send = Server.client_addresses.copy()
                     Server.card_showings_to_send.remove(ip)
                     if data[3] is None:
+                        Server.turn_stages_to_get = Server.client_addresses.copy()
+                    data = False
+                elif data[0] == "MoveLocation":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.temp_players.append(data[1])
+                    if len(Server.temp_players) == Server.player_count:
+                        Server.temp_players_to_send = Server.client_addresses.copy()
+                    data = False
+                elif data[0] == "SentCard":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.temp_cards.append((data[1], data[2]))
+                    if len(Server.temp_cards) == Server.player_count:
+                        Server.temp_cards_to_send = Server.client_addresses.copy()
+                        Server.turn_stages_to_get = Server.client_addresses.copy()
+                    data = False
+                elif data[0] == "ShowCard":
+                    print("From " + str(ip[0]) + ", Received: " + str(data))
+                    Server.temp_showings.append((data[1], data[2]))
+                    if len(Server.temp_showings) == Server.player_count:
+                        Server.temp_showings_to_send = Server.client_addresses.copy()
                         Server.turn_stages_to_get = Server.client_addresses.copy()
                     data = False
                 elif data[0] == "TurnPlayer":

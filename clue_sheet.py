@@ -77,6 +77,8 @@ class ClueSheet:
                 else:
                     colour = BLACK
                 draw_text(box.text, TINY_FONT, colour, (box.topLeft[0] + (box.width / 2), box.topLeft[1] + (box.height / 2)))
+            for x in range(box.dotCount):
+                pygame.draw.circle(WINDOW, ORANGE, (box.topLeft[0] + (x * 8), box.topLeft[1] + (box.height + 5)), 3)
 
 class ClueTitle:
     def __init__(self, card_reference, height):

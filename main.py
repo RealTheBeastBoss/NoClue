@@ -2,7 +2,6 @@ import random
 import pygame
 import sys
 
-import game
 from game import *
 from button import Button
 from server import check_server, start_server, close_server
@@ -171,26 +170,41 @@ def draw_window():  # Game Logic and Display
         WINDOW.fill(BACKGROUND)
         draw_text(str(Game.CLIENT_NUMBER), SMALL_FONT, Game.PLAYERS[Game.CLIENT_NUMBER].playerColour, (5, 5), False)
         draw_game_board()
-        if Game.CLUE_SHEET_OPEN:
+        if Game.CLUE_SHEET_OPEN and not Game.TURN_STAGE == TurnStage.GAME_OVER:
             Game.CLUE_SHEET.draw()
         if current_player.playerIndex != Game.CLIENT_NUMBER:
-            draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, ORANGE, (1503, 100))
+            draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, current_player.playerColour, (1503, 100))
             if Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
                 draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 140))
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.REVEALING_CARD[0] == "Wait":  # Waiting for Continue
                         draw_text("Waiting for others to continue", SMALL_FONT, ORANGE, (1503, 540))
+                    elif Game.COMPLETED_PASSAGE:
+                        draw_text("A Secret Passage is in the " + Game.SELECTED_LOCATION.displayName, SMALL_FONT, ORANGE, (1503, 540))
+                        continue_button = Button("Continue", 1503, 610, 60)
+                        if continue_button.check_click():
+                            Game.NETWORK.send("TurnClick")
+                            Game.REVEALING_CARD[0] = "Wait"
+                            Game.SELECTED_LOCATION = None
+                            Game.COMPLETED_PASSAGE = False
                     elif Game.PLAYER_CHOOSING is not None:  # Waiting for a Player to Choose
                         if Game.PLAYER_CHOOSING.playerIndex == Game.CLIENT_NUMBER:
                             draw_text("You need to choose a card to reveal!", SMALL_FONT, ORANGE, (1503, 240))
                             for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER].cards)):
+                                is_reveal = False
                                 card = Game.PLAYERS[Game.CLIENT_NUMBER].cards[x]
+                                for reveal in Game.REVEALED_CARDS:
+                                    if reveal.displayName == card.displayName:
+                                        is_reveal = True
+                                        break
+                                if is_reveal:
+                                    continue
                                 button = Button(card.displayName, 1503, 300 + (x * 70), 60)
                                 if button.check_click():
                                     Game.REVEALING_CARD[0] = card
                                     Game.REVEALING_CARD[1] = Game.PLAYER_CHOOSING
                                     Game.PLAYER_CHOOSING = None
-                                    Game.PLAYERS[Game.CLIENT_NUMBER].cards.remove(card)
+                                    Game.REVEALED_CARDS.append(card)
                                     Game.NETWORK.send(("ChosenCard", card))
                                     break
                         else:
@@ -205,15 +219,87 @@ def draw_window():  # Game Logic and Display
                             if continue_button.check_click():
                                 Game.NETWORK.send("TurnClick")
                                 Game.REVEALING_CARD[0] = "Wait"
-                        elif Game.DISPLAYED_CLUE_CARD.title == "Creeeeak!":
+                        elif Game.DISPLAYED_CLUE_CARD.title == "Screeeeam!":
+                            draw_text("Click on a Location to Travel There:", SMALL_FONT, ORANGE, (1503, 200))
+                            for location in Game.LOCATIONS:
+                                if check_click_location(location):
+                                    Game.SELECTED_LOCATION = location
+                            if Game.SELECTED_LOCATION is not None:
+                                location_button = Button("Confirm " + Game.SELECTED_LOCATION.displayName, 1503, 540, 60)
+                                if location_button.check_click():
+                                    Game.PLAYERS[Game.CLIENT_NUMBER].location = Game.SELECTED_LOCATION
+                                    Game.REVEALING_CARD[0] == "Wait"
+                                    Game.NETWORK.send(("MoveLocation", Game.PLAYERS[Game.CLIENT_NUMBER]))
+                                    Game.SELECTED_LOCATION = None
+                        elif Game.DISPLAYED_CLUE_CARD.title == "You Don't Say!":
+                            if Game.CARD_SENT == 0:
+                                draw_text("Choose a Card to Send to the Next Player:", SMALL_FONT, ORANGE, (1503, 200))
+                                for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER].cards)):
+                                    is_reveal = False
+                                    card = Game.PLAYERS[Game.CLIENT_NUMBER].cards[x]
+                                    for reveal in Game.REVEALED_CARDS:
+                                        if reveal.displayName == card.displayName:
+                                            is_reveal = True
+                                            break
+                                    if is_reveal:
+                                        continue
+                                    button = Button(card.displayName, 1503, 300 + (x * 70), 60)
+                                    if button.check_click():
+                                        Game.CARD_SENT = 1
+                                        Game.NETWORK.send(("ShowCard", Game.PLAYERS[Game.CLIENT_NUMBER], card))
+                                        break
+                            elif Game.CARD_SENT == 1:
+                                draw_text("Waiting for the others to choose", SMALL_FONT, ORANGE, (1503, 200))
+                            elif Game.CARD_SENT == 2:
+                                draw_text(Game.CARDS_FOR_SHOWING[0][0].playerName + " has shown you " + Game.CARDS_FOR_SHOWING[0][1].displayName, SMALL_FONT, Game.CARDS_FOR_SHOWING[0][0].playerColour, (1503, 500))
+                                continue_button = Button("Continue", 1503, 560, 60)
+                                if continue_button.check_click():
+                                    Game.CARDS_FOR_SHOWING.clear()
+                                    Game.CARD_SENT = 0
+                                    Game.REVEALING_CARD[0] = "Wait"
+                                    Game.NETWORK.send("TurnClick")
+                        elif Game.DISPLAYED_CLUE_CARD.title == "Dun-Dun-Duuun!":
+                            if Game.CARD_SENT == 0:
+                                draw_text("Choose a Card to Reveal:", SMALL_FONT, ORANGE, (1503, 200))
+                                for x in range(len(Game.PLAYERS[Game.CLIENT_NUMBER].cards)):
+                                    is_reveal = False
+                                    card = Game.PLAYERS[Game.CLIENT_NUMBER].cards[x]
+                                    for reveal in Game.REVEALED_CARDS:
+                                        if reveal.displayName == card.displayName:
+                                            is_reveal = True
+                                            break
+                                    if is_reveal:
+                                        continue
+                                    button = Button(card.displayName, 1503, 300 + (x * 70), 60)
+                                    if button.check_click():
+                                        Game.REVEALED_CARDS.append(card)
+                                        Game.CARD_SENT = 1
+                                        Game.NETWORK.send(("SentCard", Game.PLAYERS[Game.CLIENT_NUMBER], card))
+                                        break
+                            elif Game.CARD_SENT == 1:
+                                draw_text("Waiting for the others to choose", SMALL_FONT, ORANGE, (1503, 200))
+                            elif Game.CARD_SENT == 2:
+                                for x in range(len(Game.CARDS_FOR_SHOWING)):
+                                    player = Game.CARDS_FOR_SHOWING[x][0]
+                                    card = Game.CARDS_FOR_SHOWING[x][1]
+                                    draw_text(player.playerName + " has revealed " + card.displayName, SMALL_FONT, player.playerColour, (1503, 420 + (x * 40)))
+                                continue_button = Button("Continue", 1503, 430 + (len(Game.CARDS_FOR_SHOWING) * 40), 60)
+                                if continue_button.check_click():
+                                    Game.CARDS_FOR_SHOWING.clear()
+                                    Game.CARD_SENT = 0
+                                    Game.REVEALING_CARD[0] = "Wait"
+                                    Game.NETWORK.send("TurnClick")
+                        elif Game.DISPLAYED_CLUE_CARD.title == "Creeeeak!" or Game.DISPLAYED_CLUE_CARD.title == "Wink Wink!":
                             draw_text("Waiting for " + current_player.playerName + " to Choose a Location", SMALL_FONT, ORANGE, (1503, 540))
                         elif Game.DISPLAYED_CLUE_CARD.title == "Look What I Found!":
                             draw_text("Waiting for " + current_player.playerName + " to Choose a Weapon", SMALL_FONT, ORANGE, (1503, 540))
+                        elif Game.DISPLAYED_CLUE_CARD.title == "Airtight Alibi!":
+                            draw_text("Waiting for " + current_player.playerName + " to Choose a Suspect", SMALL_FONT, ORANGE, (1503, 540))
             elif Game.TURN_STAGE == TurnStage.GAME_OVER:
                 if Game.WINNER == "Nobody":
                     draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
                 else:
-                    draw_text(Game.WINNER.displayName + " has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+                    draw_text(Game.WINNER.playerName + " has won the Game!", SMALL_FONT, Game.WINNER.playerColour, (1503, 540))
             elif Game.TURN_STAGE == TurnStage.SHOW_CARD:
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.SHOWN_CARD is not None:
@@ -223,7 +309,7 @@ def draw_window():  # Game Logic and Display
                             draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 450))
                             draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 590))
                             draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 730))
-                            draw_text(Game.PLAYER_SHOWING.playerName + " has showed " + current_player.playerName + " a card", SMALL_FONT, ORANGE, (1503, 400))
+                            draw_text(Game.PLAYER_SHOWING.playerName + " has showed " + current_player.playerName + " a card", SMALL_FONT, Game.PLAYER_SHOWING.playerColour, (1503, 400))
                             continue_button = Button("Continue", 1503, 780, 60)
                             if continue_button.check_click():
                                 Game.NETWORK.send("TurnClick")
@@ -237,6 +323,13 @@ def draw_window():  # Game Logic and Display
                                 draw_text("You have card(s) to show!", SMALL_FONT, ORANGE, (1503, 650))
                                 to_continue = True
                                 for x in range(len(Game.PLAYER_GUESS)):
+                                    is_reveal = False
+                                    for reveal in Game.REVEALED_CARDS:
+                                        if reveal.displayName == Game.PLAYER_GUESS[x].displayName:
+                                            is_reveal = True
+                                            break
+                                    if is_reveal:
+                                        continue
                                     for card in Game.PLAYERS[Game.CLIENT_NUMBER].cards:
                                         if card.displayName == Game.PLAYER_GUESS[x].displayName:
                                             button = Button(card.displayName, 1503, 700 + (x * 65), 60)
@@ -249,7 +342,7 @@ def draw_window():  # Game Logic and Display
                                     if not to_continue:
                                         break
                             else:
-                                draw_text(Game.PLAYER_SHOWING.playerName + " has to show a card!", SMALL_FONT, ORANGE, (1503, 650))
+                                draw_text(Game.PLAYER_SHOWING.playerName + " has to show a card!", SMALL_FONT, Game.PLAYER_SHOWING.playerColour, (1503, 650))
                         else:
                             draw_text("Nobody else has the cards accused!", SMALL_FONT, ORANGE, (1503, 650))
                             continue_button = Button("Continue", 1503, 780, 60)
@@ -257,7 +350,7 @@ def draw_window():  # Game Logic and Display
                                 Game.NETWORK.send("TurnClick")
                                 Game.SHOWN_CARD = "Wait"
             elif Game.TURN_STAGE == TurnStage.FINAL_ACCUSATION:
-                draw_text(current_player.playerName + " is making a Final Accusation!", SMALL_FONT, ORANGE, (1503, 150))
+                draw_text(current_player.playerName + " is making a Final Accusation!", SMALL_FONT, current_player.playerColour, (1503, 150))
                 if not Game.CLUE_SHEET_OPEN:
                     pass
             else:
@@ -272,7 +365,12 @@ def draw_window():  # Game Logic and Display
                 draw_text("You have already failed, no turn for you", SMALL_FONT, ORANGE, (1503, 100))
                 end_turn_button = Button("End Turn", 1503, 145, 60)
                 if end_turn_button.check_click():
-                    Game.TURN_STAGE = TurnStage.END_TURN
+                    Game.TURN_STAGE = TurnStage.START
+                    if Game.CURRENT_PLAYER == Game.PLAYER_COUNT - 1:
+                        Game.CURRENT_PLAYER = 0
+                    else:
+                        Game.CURRENT_PLAYER += 1
+                    Game.NETWORK.send("EndTurn")
                 return
             Game.TURN_STAGE = TurnStage.ROLL_DICE
         elif Game.TURN_STAGE == TurnStage.ROLL_DICE:
@@ -283,7 +381,7 @@ def draw_window():  # Game Logic and Display
                 if roll_button.check_click():
                     DICE1.value = random.randrange(1, 7)
                     DICE2.value = random.randrange(1, 7)
-                    if Game.CLUE_CARDS_ACTIVE:
+                    if Game.CLUE_CARDS_ACTIVE and len(Game.CLUE_CARD_DECK) > 0:
                         Game.CLUE_TO_DRAW = 0
                         if DICE1.value == 1:
                             Game.CLUE_TO_DRAW += 1
@@ -383,10 +481,11 @@ def draw_window():  # Game Logic and Display
                             Game.TURN_STAGE = TurnStage.MAKE_GUESS
                             Game.PLAYER_GUESS[2] = current_player.location.ref
                             Game.NETWORK.send(("TurnPlayer", Game.TURN_STAGE, current_player))
+                            break
         elif Game.TURN_STAGE == TurnStage.DRAW_CLUE_CARD:
             draw_text("Draw a Clue Card", SMALL_FONT, ORANGE, (1503, 100))
             clue_rect = pygame.Rect((515, 463), (154, 240))
-            if Game.DISPLAYED_CLUE_CARD is None and Game.LEFT_MOUSE_RELEASED and clue_rect.collidepoint(pygame.mouse.get_pos()):
+            if Game.DISPLAYED_CLUE_CARD is None and Game.LEFT_MOUSE_RELEASED and len(Game.CLUE_CARD_DECK) > 0 and clue_rect.collidepoint(pygame.mouse.get_pos()):
                 Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
                 Game.CLUE_TO_DRAW -= 1
                 Game.NETWORK.send(("Clue", Game.DISPLAYED_CLUE_CARD))
@@ -395,8 +494,8 @@ def draw_window():  # Game Logic and Display
                     for player in Game.PLAYERS:
                         for card in player.cards:
                             if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                Game.REVEALED_CARDS.append(card)
                                 Game.REVEALING_CARD[1] = player
-                                player.cards.remove(card)
                                 break
                         if Game.REVEALING_CARD[1] is not None:
                             break
@@ -488,6 +587,9 @@ def draw_window():  # Game Logic and Display
                         if Game.PLAYER_GUESS[0] is not None and Game.PLAYER_GUESS[1] is not None:
                             continue_button = Button("Continue", 1503, 740, 60)
                             if continue_button.check_click():
+                                print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                for reveal in Game.REVEALED_CARDS:
+                                    print(reveal.displayName)
                                 selected_player = Game.CLIENT_NUMBER
                                 iterations = 0
                                 to_continue = True
@@ -502,7 +604,14 @@ def draw_window():  # Game Logic and Display
                                         iterations += 1
                                         continue
                                     for card in Game.PLAYERS[selected_player].cards:
-                                        if card.displayName == Game.PLAYER_GUESS[0].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName:
+                                        is_revealed = False
+                                        for revealed in Game.REVEALED_CARDS:
+                                            if card.displayName == revealed.displayName:
+                                                is_revealed = True
+                                                break
+                                        if is_revealed:
+                                            continue
+                                        if card.displayName == Game.PLAYER_GUESS[0].displayName or card.displayName == Game.PLAYER_GUESS[1].displayName or card.displayName == Game.PLAYER_GUESS[2].displayName:
                                             to_continue = False
                                             break
                                     if not to_continue:
@@ -527,7 +636,7 @@ def draw_window():  # Game Logic and Display
                         draw_text("Suspect: " + Game.PLAYER_GUESS[0].displayName, SMALL_FONT, ORANGE, (1503, 450))
                         draw_text("Weapon: " + Game.PLAYER_GUESS[1].displayName, SMALL_FONT, ORANGE, (1503, 590))
                         draw_text("Location: " + Game.PLAYER_GUESS[2].displayName, SMALL_FONT, ORANGE, (1503, 730))
-                        draw_text(Game.PLAYER_SHOWING.playerName + " showed you the \"" + Game.SHOWN_CARD.displayName + "\" card", SMALL_FONT, ORANGE, (1503, 400))
+                        draw_text(Game.PLAYER_SHOWING.playerName + " showed you the \"" + Game.SHOWN_CARD.displayName + "\" card", SMALL_FONT, Game.PLAYER_SHOWING.playerColour, (1503, 400))
                         continue_button = Button("Continue", 1503, 780, 60)
                         if continue_button.check_click():
                             Game.NETWORK.send("TurnClick")
@@ -705,12 +814,20 @@ def draw_window():  # Game Logic and Display
             if Game.WINNER == "Nobody":
                 draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
             else:
-                draw_text(Game.WINNER.displayName + " has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+                draw_text(Game.WINNER.playerName + " has won the Game!", SMALL_FONT, Game.WINNER.playerColour, (1503, 540))
         elif Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
             draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
             if not Game.CLUE_SHEET_OPEN:
                 if Game.REVEALING_CARD[0] == "Wait":  # Waiting for Continue
                     draw_text("Waiting for others to continue", SMALL_FONT, ORANGE, (1503, 540))
+                elif Game.COMPLETED_PASSAGE:
+                    draw_text("A Secret Passage is in the " + Game.SELECTED_LOCATION.displayName, SMALL_FONT, ORANGE, (1503, 540))
+                    continue_button = Button("Continue", 1503, 610, 60)
+                    if continue_button.check_click():
+                        Game.NETWORK.send("TurnClick")
+                        Game.REVEALING_CARD[0] = "Wait"
+                        Game.SELECTED_LOCATION = None
+                        Game.COMPLETED_PASSAGE = False
                 elif Game.PLAYER_CHOOSING is not None:  # Waiting for a Player to Choose
                     draw_text("Waiting for " + Game.PLAYER_CHOOSING.playerName + " to choose a card", SMALL_FONT, ORANGE, (1503, 540))
                 elif Game.DISPLAYED_CLUE_CARD is not None:
@@ -725,15 +842,94 @@ def draw_window():  # Game Logic and Display
                         if continue_button.check_click():
                             Game.NETWORK.send("TurnClick")
                             Game.REVEALING_CARD[0] = "Wait"
-                    elif Game.DISPLAYED_CLUE_CARD.title == "Creeeeak!":  # Choose a Location to Connect the Passages
-                        draw_text("Click a Location to Connect the Passages:", SMALL_FONT, ORANGE, (1503, 200))
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Screeeeam!":  # Go to a Room you Choose
+                        draw_text("Click on a Location to Travel There:", SMALL_FONT, ORANGE, (1503, 200))
                         for location in Game.LOCATIONS:
                             if check_click_location(location):
                                 Game.SELECTED_LOCATION = location
                         if Game.SELECTED_LOCATION is not None:
-                            location_button = Button("Confirm " + Game.SELECTED_LOCATION.displayName, 1503, 540)
+                            location_button = Button("Confirm " + Game.SELECTED_LOCATION.displayName, 1503, 540, 60)
                             if location_button.check_click():
-
+                                current_player.location = Game.SELECTED_LOCATION
+                                Game.REVEALING_CARD[0] = "Wait"
+                                Game.NETWORK.send(("MoveLocation", current_player))
+                                Game.SELECTED_LOCATION = None
+                    elif Game.DISPLAYED_CLUE_CARD.title == "You Don't Say!":  # Show a Card to the Next Player:
+                        if Game.CARD_SENT == 0:
+                            draw_text("Choose a Card to Send to the Next Player:", SMALL_FONT, ORANGE, (1503, 200))
+                            for x in range(len(current_player.cards)):
+                                is_reveal = False
+                                card = current_player.cards[x]
+                                for reveal in Game.REVEALED_CARDS:
+                                    if reveal.displayName == card.displayName:
+                                        is_reveal = True
+                                        break
+                                if is_reveal:
+                                    continue
+                                button = Button(card.displayName, 1503, 300 + (x * 70), 60)
+                                if button.check_click():
+                                    Game.CARD_SENT = 1
+                                    Game.NETWORK.send(("ShowCard", current_player, card))
+                                    break
+                        elif Game.CARD_SENT == 1:
+                            draw_text("Waiting for the others to choose", SMALL_FONT, ORANGE, (1503, 200))
+                        elif Game.CARD_SENT == 2:
+                            draw_text(Game.CARDS_FOR_SHOWING[0][0].playerName + " has shown you " + Game.CARDS_FOR_SHOWING[0][1].displayName, SMALL_FONT, Game.CARDS_FOR_SHOWING[0][0].playerColour, (1503, 500))
+                            continue_button = Button("Continue", 1503, 560, 60)
+                            if continue_button.check_click():
+                                Game.CARDS_FOR_SHOWING.clear()
+                                Game.CARD_SENT = 0
+                                Game.REVEALING_CARD[0] = "Wait"
+                                Game.NETWORK.send("TurnClick")
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Dun-Dun-Duuun!":  # All Players Reveal a Card
+                        if Game.CARD_SENT == 0:
+                            draw_text("Choose a Card to Reveal:", SMALL_FONT, ORANGE, (1503, 200))
+                            for x in range(len(current_player.cards)):
+                                is_reveal = False
+                                card = current_player.cards[x]
+                                for reveal in Game.REVEALED_CARDS:
+                                    if reveal.displayName == card.displayName:
+                                        is_reveal = True
+                                        break
+                                if is_reveal:
+                                    continue
+                                button = Button(card.displayName, 1503, 300 + (x * 70), 60)
+                                if button.check_click():
+                                    Game.REVEALED_CARDS.append(card)
+                                    Game.CARD_SENT = 1
+                                    Game.NETWORK.send(("SentCard", current_player, card))
+                                    break
+                        elif Game.CARD_SENT == 1:
+                            draw_text("Waiting for the others to choose", SMALL_FONT, ORANGE, (1503, 200))
+                        elif Game.CARD_SENT == 2:
+                            for x in range(len(Game.CARDS_FOR_SHOWING)):
+                                player = Game.CARDS_FOR_SHOWING[x][0]
+                                card = Game.CARDS_FOR_SHOWING[x][1]
+                                draw_text(player.playerName + " has revealed " + card.displayName, SMALL_FONT, ORANGE, (1503, 420 + (x * 40)))
+                            continue_button = Button("Continue", 1503, 430 + (len(Game.CARDS_FOR_SHOWING) * 40), 60)
+                            if continue_button.check_click():
+                                Game.CARDS_FOR_SHOWING.clear()
+                                Game.CARD_SENT = 0
+                                Game.REVEALING_CARD[0] = "Wait"
+                                Game.NETWORK.send("TurnClick")
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Creeeeak!":  # Choose a Location to Connect the Passages
+                        draw_text("Click a Location to Connect the Passages:", SMALL_FONT, ORANGE, (1503, 200))
+                        for location in Game.LOCATIONS:
+                            if location.displayName != "Conservatory" and location.displayName != "Lounge" and location.displayName != "Kitchen" and location.displayName != "Study" and check_click_location(location):
+                                Game.SELECTED_LOCATION = location
+                        if Game.SELECTED_LOCATION is not None:
+                            location_button = Button("Confirm " + Game.SELECTED_LOCATION.displayName, 1503, 540, 60)
+                            if location_button.check_click():
+                                Game.SELECTED_LOCATION.passage.append(CONSERVATORY)
+                                Game.SELECTED_LOCATION.passage.append(LOUNGE)
+                                Game.SELECTED_LOCATION.passage.append(KITCHEN)
+                                Game.SELECTED_LOCATION.passage.append(STUDY)
+                                CONSERVATORY.passage.append(Game.SELECTED_LOCATION)
+                                LOUNGE.passage.append(Game.SELECTED_LOCATION)
+                                KITCHEN.passage.append(Game.SELECTED_LOCATION)
+                                STUDY.passage.append(Game.SELECTED_LOCATION)
+                                Game.NETWORK.send(("PassageLocation", Game.SELECTED_LOCATION))
+                                Game.COMPLETED_PASSAGE = True
                     elif Game.DISPLAYED_CLUE_CARD.title == "Under Pressure!":  # Choose Player to Reveal a Card
                         draw_text("Choose a Player to Reveal a Card:", SMALL_FONT, ORANGE, (1503, 200))
                         for x in range(len(Game.PLAYERS)):
@@ -742,6 +938,61 @@ def draw_window():  # Game Logic and Display
                                 if button.check_click():
                                     Game.PLAYER_CHOOSING = Game.PLAYERS[x]
                                     Game.NETWORK.send(("PlayerChoosing", Game.PLAYER_CHOOSING))
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Wink Wink!":  # Choose a Location to Reveal
+                        draw_text("Click a Location to be Revealed:", SMALL_FONT, ORANGE, (1503, 200))
+                        for location in Game.LOCATIONS:
+                            if check_click_location(location):
+                                Game.SELECTED_LOCATION = location
+                        if Game.SELECTED_LOCATION is not None:
+                            location_button = Button("Confirm " + Game.SELECTED_LOCATION.displayName, 1503, 540, 60)
+                            if location_button.check_click():
+                                Game.REVEALING_CARD[0] = Game.SELECTED_LOCATION.ref
+                                Game.NETWORK.send(("WeaponReveal", Game.SELECTED_LOCATION.ref))
+                                Game.SELECTED_LOCATION = None
+                            if Game.REVEALING_CARD[0] is not None:
+                                for player in Game.PLAYERS:
+                                    for card in player.cards:
+                                        if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                            Game.REVEALED_CARDS.append(card)
+                                            Game.REVEALING_CARD[1] = player
+                                            break
+                                    if Game.REVEALING_CARD[1] is not None:
+                                        break
+                    elif Game.DISPLAYED_CLUE_CARD.title == "Airtight Alibi!":  # Choose a Suspect to Reveal
+                        draw_text("Choose a Suspect to be Revealed:", SMALL_FONT, ORANGE, (1503, 300))
+                        scarlett_button = Button("Miss Scarlett", 1503, 365, 60)
+                        if scarlett_button.check_click():
+                            Game.REVEALING_CARD[0] = MISS_SCARLETT
+                            Game.NETWORK.send(("WeaponReveal", MISS_SCARLETT))
+                        mustard_button = Button("Col. Mustard", 1503, 435, 60)
+                        if mustard_button.check_click():
+                            Game.REVEALING_CARD[0] = COL_MUSTARD
+                            Game.NETWORK.send(("WeaponReveal", COL_MUSTARD))
+                        orchid_button = Button("Dr Orchid", 1503, 505, 60)
+                        if orchid_button.check_click():
+                            Game.REVEALING_CARD[0] = DR_ORCHID
+                            Game.NETWORK.send(("WeaponReveal", DR_ORCHID))
+                        green_button = Button("Rev. Green", 1503, 575, 60)
+                        if green_button.check_click():
+                            Game.REVEALING_CARD[0] = REV_GREEN
+                            Game.NETWORK.send(("WeaponReveal", REV_GREEN))
+                        peacock_button = Button("Mrs Peacock", 1503, 645, 60)
+                        if peacock_button.check_click():
+                            Game.REVEALING_CARD[0] = MRS_PEACOCK
+                            Game.NETWORK.send(("WeaponReveal", MRS_PEACOCK))
+                        plum_button = Button("Prof. Plum", 1503, 715, 60)
+                        if plum_button.check_click():
+                            Game.REVEALING_CARD[0] = PROF_PLUM
+                            Game.NETWORK.send(("WeaponReveal", PROF_PLUM))
+                        if Game.REVEALING_CARD[0] is not None:
+                            for player in Game.PLAYERS:
+                                for card in player.cards:
+                                    if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                        Game.REVEALED_CARDS.append(card)
+                                        Game.REVEALING_CARD[1] = player
+                                        break
+                                if Game.REVEALING_CARD[1] is not None:
+                                    break
                     elif Game.DISPLAYED_CLUE_CARD.title == "Look What I Found!":  # Choose a Weapon to Reveal
                         draw_text("Choose a Weapon to be Revealed:", SMALL_FONT, ORANGE, (1503, 300))
                         candlestick_button = Button("Candlestick", 1503, 365, 60)
@@ -772,8 +1023,8 @@ def draw_window():  # Game Logic and Display
                             for player in Game.PLAYERS:
                                 for card in player.cards:
                                     if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                        Game.REVEALED_CARDS.append(card)
                                         Game.REVEALING_CARD[1] = player
-                                        player.cards.remove(card)
                                         break
                                 if Game.REVEALING_CARD[1] is not None:
                                     break
@@ -802,7 +1053,7 @@ def draw_game_board():
         else:
             player_location = player.location.player_to_point[player.playerIndex]
         pygame.draw.circle(WINDOW, player.playerColour, player_location, 18)
-    if Game.CLUE_CARDS_ACTIVE:
+    if Game.CLUE_CARDS_ACTIVE and len(Game.CLUE_CARD_DECK) > 0:
         clue_rect = pygame.Rect((515, 463), (154, 240))
         pygame.draw.rect(WINDOW, BLACK, clue_rect, 0, 10)
         pygame.draw.rect(WINDOW, WHITE, clue_rect, 5, 10)
@@ -819,13 +1070,13 @@ def check_updates():
             Game.PLAYER_GUESS[1] = None
             Game.PLAYER_GUESS[2] = None
             Game.SHOWN_CARD = None
-    elif Game.REVEALING_CARD[0] == "Wait":
+    elif Game.REVEALING_CARD[0] == "Wait" and not Game.DISPLAYED_CLUE_CARD.title == "Screeeeam!":
         data = Game.NETWORK.send("!!")
         if data:
             Game.REVEALING_CARD[0] = None
             Game.REVEALING_CARD[1] = None
             Game.DISPLAYED_CLUE_CARD = None
-            if Game.CLUE_TO_DRAW > 0:
+            if Game.CLUE_TO_DRAW > 0 and len(Game.CLUE_CARD_DECK) > 0:
                 Game.TURN_STAGE = TurnStage.DRAW_CLUE_CARD
             else:
                 Game.TURN_STAGE = TurnStage.MOVEMENT
@@ -849,6 +1100,14 @@ def check_updates():
         if "players" in response:
             for player in response["players"]:
                 Game.PLAYERS[player.playerIndex] = player
+            if Game.DISPLAYED_CLUE_CARD is not None and Game.DISPLAYED_CLUE_CARD.title == "Screeeeam!":
+                Game.REVEALING_CARD[0] = None
+                Game.REVEALING_CARD[1] = None
+                Game.DISPLAYED_CLUE_CARD = None
+                if Game.CLUE_TO_DRAW > 0 and len(Game.CLUE_CARD_DECK) > 0:
+                    Game.TURN_STAGE = TurnStage.DRAW_CLUE_CARD
+                else:
+                    Game.TURN_STAGE = TurnStage.MOVEMENT
         if "clue" in response:
             if Game.DISPLAYED_CLUE_CARD is None:
                 Game.DISPLAYED_CLUE_CARD = Game.CLUE_CARD_DECK.pop()
@@ -857,8 +1116,8 @@ def check_updates():
                     for player in Game.PLAYERS:
                         for card in player.cards:
                             if card.displayName == Game.REVEALING_CARD[0].displayName:
+                                Game.REVEALED_CARDS.append(card)
                                 Game.REVEALING_CARD[1] = player
-                                player.cards.remove(card)
                                 break
                         if Game.REVEALING_CARD[1] is not None:
                             break
@@ -867,6 +1126,9 @@ def check_updates():
         if "card_show" in response:
             Game.PLAYER_SHOWING = response["card_show"][0]
             Game.PLAYER_GUESS = response["card_show"][1]
+            print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+            for reveal in Game.REVEALED_CARDS:
+                print(reveal.displayName)
         if "show_card" in response:
             Game.SHOWN_CARD = response["show_card"]
         if "end_turn" in response:
@@ -901,18 +1163,46 @@ def check_updates():
             Game.REVEALING_CARD[1] = Game.PLAYER_CHOOSING
             for x in range(len(Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards)):
                 if Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards[x].displayName == Game.REVEALING_CARD[0].displayName:
-                    Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards.remove(Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards[x])
+                    Game.REVEALED_CARDS.append(Game.REVEALING_CARD[0])
             Game.PLAYER_CHOOSING = None
         if "weapon_reveal" in response:
             Game.REVEALING_CARD[0] = response["weapon_reveal"]
             for player in Game.PLAYERS:
-                for card in player.cards:
+                for card in player.cards.copy():
                     if card.displayName == Game.REVEALING_CARD[0].displayName:
+                        Game.REVEALED_CARDS.append(card)
                         Game.REVEALING_CARD[1] = player
-                        player.cards.remove(card)
                         break
                 if Game.REVEALING_CARD[1] is not None:
                     break
+        if "passage_location" in response:
+            location = response["passage_location"]
+            for loc in Game.LOCATIONS:
+                if loc.displayName == location.displayName:
+                    loc.passage.append(CONSERVATORY)
+                    loc.passage.append(LOUNGE)
+                    loc.passage.append(KITCHEN)
+                    loc.passage.append(STUDY)
+                    CONSERVATORY.passage.append(loc)
+                    LOUNGE.passage.append(loc)
+                    KITCHEN.passage.append(loc)
+                    STUDY.passage.append(loc)
+                    Game.COMPLETED_PASSAGE = True
+                    Game.SELECTED_LOCATION = loc
+        if "cards" in response:
+            Game.CARD_SENT = 2
+            for pair in response["cards"]:
+                if not pair[0].playerName == Game.PLAYERS[Game.CLIENT_NUMBER].playerName:
+                    Game.CARDS_FOR_SHOWING.append(pair)
+        if "showings" in response:
+            Game.CARD_SENT = 2
+            if Game.CLIENT_NUMBER == 0:
+                target = Game.PLAYER_COUNT - 1
+            else:
+                target = Game.CLIENT_NUMBER - 1
+            for pair in response["showings"]:
+                if pair[0].playerIndex == target:
+                    Game.CARDS_FOR_SHOWING.append(pair)
 
 
 def draw_clue_card(card, location):
@@ -1020,6 +1310,16 @@ if __name__ == "__main__":
                 elif event.key == pygame.K_RETURN and Game.CLUE_SHEET_OPEN and Game.CLUE_SHEET.selectedBox is not None:
                     Game.CLUE_SHEET.selectedBox.text = "O"
                     Game.CLUE_SHEET.selectedBox.clueTitle.state = TitleState.CROSSED
+                elif event.key == pygame.K_0 and Game.CLUE_SHEET_OPEN and Game.CLUE_SHEET.selectedBox is not None:
+                    Game.CLUE_SHEET.selectedBox.dotCount = 0
+                elif event.key == pygame.K_1 and Game.CLUE_SHEET_OPEN and Game.CLUE_SHEET.selectedBox is not None:
+                    Game.CLUE_SHEET.selectedBox.dotCount = 1
+                elif event.key == pygame.K_2 and Game.CLUE_SHEET_OPEN and Game.CLUE_SHEET.selectedBox is not None:
+                    Game.CLUE_SHEET.selectedBox.dotCount = 2
+                elif event.key == pygame.K_3 and Game.CLUE_SHEET_OPEN and Game.CLUE_SHEET.selectedBox is not None:
+                    Game.CLUE_SHEET.selectedBox.dotCount = 3
+                elif event.key == pygame.K_4 and Game.CLUE_SHEET_OPEN and Game.CLUE_SHEET.selectedBox is not None:
+                    Game.CLUE_SHEET.selectedBox.dotCount = 4
                 elif event.key in ALLOWED_KEYS:
                     if event.key == pygame.K_BACKSPACE:
                         Game.USER_TEXT = Game.USER_TEXT[:-1]

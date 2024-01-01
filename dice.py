@@ -14,7 +14,7 @@ class Dice:
 
     def draw(self, pos):
         if self.value == 1:
-            if Game.CLUE_CARDS_ACTIVE:
+            if Game.CLUE_CARDS_ACTIVE and len(Game.CLUE_CARD_DECK) > 0:
                 dice_image = DICE_CLUE
             else:
                 dice_image = DICE_ONE
