@@ -45,7 +45,7 @@ class ClueSheet:
         self.selectedBox = None
 
     def draw(self):
-        pygame.draw.rect(WINDOW, WHITE, pygame.Rect((1326, 180), (564, 870)), 0, 15)
+        pygame.draw.rect(WINDOW, BEIGE, pygame.Rect((1326, 180), (564, 870)), 0, 15)
         for title in self.clueTitles:
             draw_text(title.text, SMALL_FONT, BLACK, (1560, title.height), title)
         selected_player = Game.CLIENT_NUMBER

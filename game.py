@@ -85,6 +85,7 @@ LIGHT_BLUE = (0, 185, 227)
 PURPLE = (179, 0, 255)
 BLACK = (0, 0, 0)
 BACKGROUND = (26, 15, 73)
+BEIGE = (217, 185, 155)
 
 class ScreenState(Enum):
     START = 1

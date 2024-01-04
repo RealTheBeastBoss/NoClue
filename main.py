@@ -170,7 +170,7 @@ def draw_window():  # Game Logic and Display
         WINDOW.fill(BACKGROUND)
         draw_text(str(Game.CLIENT_NUMBER), SMALL_FONT, Game.PLAYERS[Game.CLIENT_NUMBER].playerColour, (5, 5), False)
         draw_game_board()
-        if Game.CLUE_SHEET_OPEN and not Game.TURN_STAGE == TurnStage.GAME_OVER:
+        if Game.CLUE_SHEET_OPEN:
             Game.CLUE_SHEET.draw()
         if current_player.playerIndex != Game.CLIENT_NUMBER:
             draw_text("It is " + current_player.playerName + "'s turn", SMALL_FONT, current_player.playerColour, (1503, 100))
@@ -205,6 +205,9 @@ def draw_window():  # Game Logic and Display
                                     Game.REVEALING_CARD[1] = Game.PLAYER_CHOOSING
                                     Game.PLAYER_CHOOSING = None
                                     Game.REVEALED_CARDS.append(card)
+                                    print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                    for reveal in Game.REVEALED_CARDS:
+                                        print(reveal.displayName)
                                     Game.NETWORK.send(("ChosenCard", card))
                                     break
                         else:
@@ -273,6 +276,9 @@ def draw_window():  # Game Logic and Display
                                     button = Button(card.displayName, 1503, 300 + (x * 70), 60)
                                     if button.check_click():
                                         Game.REVEALED_CARDS.append(card)
+                                        print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                        for reveal in Game.REVEALED_CARDS:
+                                            print(reveal.displayName)
                                         Game.CARD_SENT = 1
                                         Game.NETWORK.send(("SentCard", Game.PLAYERS[Game.CLIENT_NUMBER], card))
                                         break
@@ -296,10 +302,12 @@ def draw_window():  # Game Logic and Display
                         elif Game.DISPLAYED_CLUE_CARD.title == "Airtight Alibi!":
                             draw_text("Waiting for " + current_player.playerName + " to Choose a Suspect", SMALL_FONT, ORANGE, (1503, 540))
             elif Game.TURN_STAGE == TurnStage.GAME_OVER:
-                if Game.WINNER == "Nobody":
-                    draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
-                else:
-                    draw_text(Game.WINNER.playerName + " has won the Game!", SMALL_FONT, Game.WINNER.playerColour, (1503, 540))
+                draw_text("The Game is now Over!", SMALL_FONT, ORANGE, (1503, 150))
+                if not Game.CLUE_SHEET_OPEN:
+                    if Game.WINNER == "Nobody":
+                        draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+                    else:
+                        draw_text(Game.WINNER.playerName + " has won the Game!", SMALL_FONT, Game.WINNER.playerColour, (1503, 540))
             elif Game.TURN_STAGE == TurnStage.SHOW_CARD:
                 if not Game.CLUE_SHEET_OPEN:
                     if Game.SHOWN_CARD is not None:
@@ -495,6 +503,9 @@ def draw_window():  # Game Logic and Display
                         for card in player.cards:
                             if card.displayName == Game.REVEALING_CARD[0].displayName:
                                 Game.REVEALED_CARDS.append(card)
+                                print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                for reveal in Game.REVEALED_CARDS:
+                                    print(reveal.displayName)
                                 Game.REVEALING_CARD[1] = player
                                 break
                         if Game.REVEALING_CARD[1] is not None:
@@ -520,6 +531,10 @@ def draw_window():  # Game Logic and Display
             else:
                 draw_text("Select a Suspect and Weapon:", SMALL_FONT, ORANGE, (1503, 100))
                 if not Game.CLUE_SHEET_OPEN:
+                    reset_button = Button("Reset", 1503, 810, 60)
+                    if reset_button.check_click():
+                        Game.PLAYER_GUESS[0] = None
+                        Game.PLAYER_GUESS[1] = None
                     if Game.ACCUSE_SUSPECT:
                         scarlett_button = Button("Miss Scarlett", 1503, 365, 60)
                         if scarlett_button.check_click():
@@ -587,9 +602,6 @@ def draw_window():  # Game Logic and Display
                         if Game.PLAYER_GUESS[0] is not None and Game.PLAYER_GUESS[1] is not None:
                             continue_button = Button("Continue", 1503, 740, 60)
                             if continue_button.check_click():
-                                print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
-                                for reveal in Game.REVEALED_CARDS:
-                                    print(reveal.displayName)
                                 selected_player = Game.CLIENT_NUMBER
                                 iterations = 0
                                 to_continue = True
@@ -811,10 +823,11 @@ def draw_window():  # Game Logic and Display
                                         Game.TURN_STAGE = TurnStage.GAME_OVER
         elif Game.TURN_STAGE == TurnStage.GAME_OVER:
             draw_text("The Game is now Over!", SMALL_FONT, ORANGE, (1503, 100))
-            if Game.WINNER == "Nobody":
-                draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
-            else:
-                draw_text(Game.WINNER.playerName + " has won the Game!", SMALL_FONT, Game.WINNER.playerColour, (1503, 540))
+            if not Game.CLUE_SHEET_OPEN:
+                if Game.WINNER == "Nobody":
+                    draw_text("Nobody has won the Game!", SMALL_FONT, ORANGE, (1503, 540))
+                else:
+                    draw_text(Game.WINNER.playerName + " has won the Game!", SMALL_FONT, Game.WINNER.playerColour, (1503, 540))
         elif Game.TURN_STAGE == TurnStage.USE_CLUE_CARD:
             draw_text("Using the Clue Card!", SMALL_FONT, ORANGE, (1503, 100))
             if not Game.CLUE_SHEET_OPEN:
@@ -896,6 +909,9 @@ def draw_window():  # Game Logic and Display
                                 button = Button(card.displayName, 1503, 300 + (x * 70), 60)
                                 if button.check_click():
                                     Game.REVEALED_CARDS.append(card)
+                                    print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                    for reveal in Game.REVEALED_CARDS:
+                                        print(reveal.displayName)
                                     Game.CARD_SENT = 1
                                     Game.NETWORK.send(("SentCard", current_player, card))
                                     break
@@ -954,6 +970,9 @@ def draw_window():  # Game Logic and Display
                                     for card in player.cards:
                                         if card.displayName == Game.REVEALING_CARD[0].displayName:
                                             Game.REVEALED_CARDS.append(card)
+                                            print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                            for reveal in Game.REVEALED_CARDS:
+                                                print(reveal.displayName)
                                             Game.REVEALING_CARD[1] = player
                                             break
                                     if Game.REVEALING_CARD[1] is not None:
@@ -989,6 +1008,9 @@ def draw_window():  # Game Logic and Display
                                 for card in player.cards:
                                     if card.displayName == Game.REVEALING_CARD[0].displayName:
                                         Game.REVEALED_CARDS.append(card)
+                                        print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                        for reveal in Game.REVEALED_CARDS:
+                                            print(reveal.displayName)
                                         Game.REVEALING_CARD[1] = player
                                         break
                                 if Game.REVEALING_CARD[1] is not None:
@@ -1024,6 +1046,9 @@ def draw_window():  # Game Logic and Display
                                 for card in player.cards:
                                     if card.displayName == Game.REVEALING_CARD[0].displayName:
                                         Game.REVEALED_CARDS.append(card)
+                                        print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                        for reveal in Game.REVEALED_CARDS:
+                                            print(reveal.displayName)
                                         Game.REVEALING_CARD[1] = player
                                         break
                                 if Game.REVEALING_CARD[1] is not None:
@@ -1037,7 +1062,7 @@ def draw_window():  # Game Logic and Display
 
 def draw_game_board():
     for location in Game.LOCATIONS:
-        pygame.draw.polygon(WINDOW, WHITE, location.corners)
+        pygame.draw.polygon(WINDOW, BEIGE, location.corners)
         draw_text(location.displayName, SMALL_FONT, BACKGROUND, location.center)
         if location.card is not None:
             draw_text("(Has a Card)", SMALL_FONT, BACKGROUND, (location.center[0], location.center[1] + 30))
@@ -1045,7 +1070,7 @@ def draw_game_board():
         if Game.SELECTED_SQUARE == square:
             colour = ORANGE
         else:
-            colour = WHITE
+            colour = BEIGE
         pygame.draw.rect(WINDOW, colour, square.currentRect)
     for player in Game.PLAYERS:
         if isinstance(player.location, Square):
@@ -1117,6 +1142,9 @@ def check_updates():
                         for card in player.cards:
                             if card.displayName == Game.REVEALING_CARD[0].displayName:
                                 Game.REVEALED_CARDS.append(card)
+                                print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                                for reveal in Game.REVEALED_CARDS:
+                                    print(reveal.displayName)
                                 Game.REVEALING_CARD[1] = player
                                 break
                         if Game.REVEALING_CARD[1] is not None:
@@ -1126,9 +1154,6 @@ def check_updates():
         if "card_show" in response:
             Game.PLAYER_SHOWING = response["card_show"][0]
             Game.PLAYER_GUESS = response["card_show"][1]
-            print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
-            for reveal in Game.REVEALED_CARDS:
-                print(reveal.displayName)
         if "show_card" in response:
             Game.SHOWN_CARD = response["show_card"]
         if "end_turn" in response:
@@ -1164,6 +1189,9 @@ def check_updates():
             for x in range(len(Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards)):
                 if Game.PLAYERS[Game.PLAYER_CHOOSING.playerIndex].cards[x].displayName == Game.REVEALING_CARD[0].displayName:
                     Game.REVEALED_CARDS.append(Game.REVEALING_CARD[0])
+                    print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                    for reveal in Game.REVEALED_CARDS:
+                        print(reveal.displayName)
             Game.PLAYER_CHOOSING = None
         if "weapon_reveal" in response:
             Game.REVEALING_CARD[0] = response["weapon_reveal"]
@@ -1171,6 +1199,9 @@ def check_updates():
                 for card in player.cards.copy():
                     if card.displayName == Game.REVEALING_CARD[0].displayName:
                         Game.REVEALED_CARDS.append(card)
+                        print("Revealed Cards: " + str(len(Game.REVEALED_CARDS)))
+                        for reveal in Game.REVEALED_CARDS:
+                            print(reveal.displayName)
                         Game.REVEALING_CARD[1] = player
                         break
                 if Game.REVEALING_CARD[1] is not None:
